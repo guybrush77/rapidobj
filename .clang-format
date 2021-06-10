@@ -1,0 +1,35 @@
+﻿---
+AlignAfterOpenBracket: AlwaysBreak
+AlignConsecutiveAssignments: true
+AlignConsecutiveMacros: true
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignEscapedNewlines: DontAlign
+AlignTrailingComments: true
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: InlineOnly
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakAfterReturnType: None
+AlwaysBreakTemplateDeclarations: true
+BinPackParameters: false
+BinPackArguments: false
+BraceWrapping:
+    AfterFunction: true
+    SplitEmptyFunction: false
+    SplitEmptyRecord: false
+BreakBeforeBraces: Custom
+ColumnLimit: 120
+Cpp11BracedListStyle: false
+FixNamespaceComments: true
+IndentWidth: 4
+KeepEmptyLinesAtTheStartOfBlocks: false
+PenaltyBreakAssignment: 20
+PenaltyReturnTypeOnItsOwnLine: 200
+PointerAlignment: Left
+SpaceAfterTemplateKeyword: true
+SpacesInContainerLiterals: true
+UseTab: Never
+
+...
