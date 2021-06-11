@@ -1,11 +1,17 @@
 @startuml
 
 scale 1700 width
-hide circle
+
 !theme cerulean-outline
+
+hide circle
+
+skinparam ClassFontName Roboto
+skinparam ClassFontStyle bold
+skinparam ClassFontSize 14
+
 skinparam ClassAttributeFontName Roboto Mono
 skinparam ClassAttributeFontStyle bold
-skinparam ClassFontStyle bold
 
 class Result {
     attributes : Attributes
@@ -16,8 +22,8 @@ class Result {
 
 class Attributes {
     positions : Array<float>
-    normals   : Array<float>
     texcoords : Array<float>
+    normals   : Array<float>
 }
 
 class Shape {
@@ -50,7 +56,7 @@ class Error {
 }
 
 class Index {
-    vertex_index   : int
+    position_index : int
     texcoord_index : int
     normal_index   : int
 }

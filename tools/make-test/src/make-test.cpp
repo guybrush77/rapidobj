@@ -15,9 +15,9 @@ std::ostream& operator<<(std::ostream& os, const rapidobj::Index& index)
 {
     using std::to_string;
 
-    const auto& [ivertex, itex, inormal] = index;
+    const auto& [iposition, itex, inormal] = index;
 
-    auto out = std::string("{ " + to_string(ivertex) + ", " + to_string(itex) + ", " + to_string(inormal) + " }");
+    auto out = std::string("{ " + to_string(iposition) + ", " + to_string(itex) + ", " + to_string(inormal) + " }");
 
     os << out;
 
@@ -103,7 +103,7 @@ bool operator!=(const rapidobj::Material& lhs, const tinyobj::material_t& rhs)
 
 bool operator==(const rapidobj::Index lhs, const tinyobj::index_t rhs)
 {
-    return lhs.vertex_index == rhs.vertex_index && lhs.texcoord_index == rhs.texcoord_index &&
+    return lhs.position_index == rhs.vertex_index && lhs.texcoord_index == rhs.texcoord_index &&
            lhs.normal_index == rhs.normal_index;
 }
 

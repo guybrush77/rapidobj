@@ -146,12 +146,12 @@ bool operator!=(const Array<T>& lhs, const Array<T>& rhs)
 
 struct Attributes final {
     Array<float> positions; // 'v'  (xyz)
-    Array<float> normals;   // 'vn' (xyz)
     Array<float> texcoords; // 'vt' (uv)
+    Array<float> normals;   // 'vn' (xyz)
 };
 
 struct Index final {
-    int vertex_index;
+    int position_index;
     int texcoord_index;
     int normal_index;
 };
@@ -261,7 +261,7 @@ struct Error final {
     size_t          line_num{};
 };
 
-struct Result final {
+struct [[nodiscard]] Result final {
     Attributes attributes;
     Shapes     shapes;
     Materials  materials;
@@ -3625,7 +3625,7 @@ struct CopyIndices final {
     auto Execute() const noexcept
     {
         for (size_t i = 0; i != state.size; ++i) {
-            auto vertex_index   = state.src[i].vertex_index;
+            auto position_index = state.src[i].position_index;
             auto texcoord_index = state.src[i].texcoord_index;
             auto normal_index   = state.src[i].normal_index;
             auto offset_flags   = state.offset_flags[i];
@@ -3633,9 +3633,9 @@ struct CopyIndices final {
             bool is_out_of_bounds = false;
 
             if (offset_flags & ApplyOffset::Position) {
-                vertex_index += static_cast<int>(state.position_offset);
+                position_index += static_cast<int>(state.position_offset);
             }
-            is_out_of_bounds |= vertex_index < 0 || vertex_index >= static_cast<int>(state.num_positions);
+            is_out_of_bounds |= position_index < 0 || position_index >= static_cast<int>(state.num_positions);
 
             if (offset_flags & ApplyOffset::Texcoord) {
                 texcoord_index += static_cast<int>(state.texcoord_offset);
@@ -3657,7 +3657,7 @@ struct CopyIndices final {
                 return rapidobj_errc::IndexOutOfBoundsError;
             }
 
-            state.dst[i].vertex_index   = vertex_index;
+            state.dst[i].position_index = position_index;
             state.dst[i].texcoord_index = texcoord_index;
             state.dst[i].normal_index   = normal_index;
         }
@@ -5074,7 +5074,7 @@ inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
         normals_size += chunk.normals.buffer.size();
     }
 
-    auto attributes = Attributes{ { positions_size }, { normals_size }, { texcoords_size } };
+    auto attributes = Attributes{ { positions_size }, { texcoords_size }, { normals_size } };
 
     auto positions_destination = attributes.positions.data();
     auto texcoords_destination = attributes.texcoords.data();
@@ -5656,26 +5656,26 @@ inline bool TriangulateSingleTask(const Array<float>& positions, const Triangula
 
             bool d02_is_less{};
             {
-                auto vertex_index0 = 3 * static_cast<size_t>(index0.vertex_index);
-                auto vertex_index1 = 3 * static_cast<size_t>(index1.vertex_index);
-                auto vertex_index2 = 3 * static_cast<size_t>(index2.vertex_index);
-                auto vertex_index3 = 3 * static_cast<size_t>(index3.vertex_index);
+                auto position_index0 = 3 * static_cast<size_t>(index0.position_index);
+                auto position_index1 = 3 * static_cast<size_t>(index1.position_index);
+                auto position_index2 = 3 * static_cast<size_t>(index2.position_index);
+                auto position_index3 = 3 * static_cast<size_t>(index3.position_index);
 
-                auto pos0_x = positions[vertex_index0 + 0];
-                auto pos0_y = positions[vertex_index0 + 1];
-                auto pos0_z = positions[vertex_index0 + 2];
+                auto pos0_x = positions[position_index0 + 0];
+                auto pos0_y = positions[position_index0 + 1];
+                auto pos0_z = positions[position_index0 + 2];
 
-                auto pos1_x = positions[vertex_index1 + 0];
-                auto pos1_y = positions[vertex_index1 + 1];
-                auto pos1_z = positions[vertex_index1 + 2];
+                auto pos1_x = positions[position_index1 + 0];
+                auto pos1_y = positions[position_index1 + 1];
+                auto pos1_z = positions[position_index1 + 2];
 
-                auto pos2_x = positions[vertex_index2 + 0];
-                auto pos2_y = positions[vertex_index2 + 1];
-                auto pos2_z = positions[vertex_index2 + 2];
+                auto pos2_x = positions[position_index2 + 0];
+                auto pos2_y = positions[position_index2 + 1];
+                auto pos2_z = positions[position_index2 + 2];
 
-                auto pos3_x = positions[vertex_index3 + 0];
-                auto pos3_y = positions[vertex_index3 + 1];
-                auto pos3_z = positions[vertex_index3 + 2];
+                auto pos3_x = positions[position_index3 + 0];
+                auto pos3_y = positions[position_index3 + 1];
+                auto pos3_z = positions[position_index3 + 2];
 
                 auto e02_x = pos0_x - pos2_x;
                 auto e02_y = pos0_y - pos2_y;
@@ -5717,11 +5717,11 @@ inline bool TriangulateSingleTask(const Array<float>& positions, const Triangula
             index_map.clear();
 
             for (size_t k = 0; k != num_vertices; ++k) {
-                auto vertex_index = 3 * static_cast<size_t>(src->indices[isrc + k].vertex_index);
+                auto position_index = 3 * static_cast<size_t>(src->indices[isrc + k].position_index);
                 index_map.push_back(isrc + k);
-                xs[k] = positions[vertex_index + 0];
-                ys[k] = positions[vertex_index + 1];
-                zs[k] = positions[vertex_index + 2];
+                xs[k] = positions[position_index + 0];
+                ys[k] = positions[position_index + 1];
+                zs[k] = positions[position_index + 2];
             }
 
             isrc += num_vertices;

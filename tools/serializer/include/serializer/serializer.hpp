@@ -7,7 +7,7 @@ namespace rapidobj {
 //
 inline bool operator==(const Index& lhs, const Index& rhs)
 {
-    return lhs.vertex_index == rhs.vertex_index && lhs.texcoord_index == rhs.texcoord_index &&
+    return lhs.position_index == rhs.position_index && lhs.texcoord_index == rhs.texcoord_index &&
            lhs.normal_index == rhs.normal_index;
 }
 

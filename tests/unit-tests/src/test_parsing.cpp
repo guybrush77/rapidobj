@@ -4,8 +4,8 @@
 
 bool operator==(const rapidobj::Index& lhs, const rapidobj::Index& rhs) noexcept
 {
-    return lhs.vertex_index == rhs.vertex_index && lhs.normal_index == rhs.normal_index &&
-           lhs.texcoord_index == rhs.texcoord_index;
+    return lhs.position_index == rhs.position_index && lhs.texcoord_index == rhs.texcoord_index &&
+           lhs.normal_index == rhs.normal_index;
 }
 
 bool operator==(rapidobj::detail::OffsetFlags lhs, const rapidobj::detail::ApplyOffset& rhs) noexcept

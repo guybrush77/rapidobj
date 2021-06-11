@@ -56,7 +56,7 @@ void load(Archive& archive, Array<T>& arr)
 template <typename Archive>
 void serialize(Archive& archive, Index& index)
 {
-    archive(index.vertex_index, index.texcoord_index, index.normal_index);
+    archive(index.position_index, index.texcoord_index, index.normal_index);
 }
 
 template <typename Archive>
