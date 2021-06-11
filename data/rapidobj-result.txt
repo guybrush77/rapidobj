@@ -1,0 +1,67 @@
+@startuml
+
+scale 1700 width
+hide circle
+!theme cerulean-outline
+skinparam ClassAttributeFontName Roboto Mono
+skinparam ClassAttributeFontStyle bold
+skinparam ClassFontStyle bold
+
+class Result {
+    attributes : Attributes
+    shapes     : std::vector<Shape>
+    materials  : std::vector<Material>
+    error      : Error
+}
+
+class Attributes {
+    positions : Array<float>
+    normals   : Array<float>
+    texcoords : Array<float>
+}
+
+class Shape {
+    name  : std::string
+    mesh  : Mesh
+    lines : Lines
+}
+
+class Mesh {
+    indices             : Array<Index>
+    num_face_vertices   : Array<std::uint8_t>
+    material_ids        : Array<std::int32_t>  
+    smoothing_group_ids : Array<std::uint32_t>
+}
+
+class Lines {
+    indices           : Array<Index>
+    num_line_vertices : Array<std::int32_t>
+}
+
+class Material {
+    name       : std::string
+    parameters : ParameterTypes
+}
+
+class Error {
+    code     : std::error_code
+    line     : std::string     
+    line_num : std::size_t
+}
+
+class Index {
+    vertex_index   : int
+    texcoord_index : int
+    normal_index   : int
+}
+
+Result *-- Attributes
+Result "1" *-- "many" Shape #text:red
+Result "1" *-- "many" Material #text:red
+Result *-- Error
+
+Shape *-- Mesh
+Shape *-- Lines
+
+hide methods
+@enduml
