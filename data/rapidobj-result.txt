@@ -1,7 +1,5 @@
 @startuml
 
-scale 1700 width
-
 !theme cerulean-outline
 
 hide circle

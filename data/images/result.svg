@@ -1,0 +1,1709 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   contentScriptType="application/ecmascript"
+   contentStyleType="text/css"
+   height="210mm"
+   preserveAspectRatio="none"
+   version="1.1"
+   viewBox="0 0 1121.6276 793.22697"
+   width="297mm"
+   zoomAndPan="magnify"
+   id="svg173"
+   sodipodi:docname="rapidobj-result.svg"
+   inkscape:version="1.1 (c68e22c387, 2021-05-23)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview175"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     showgrid="false"
+     units="mm"
+     inkscape:zoom="1"
+     inkscape:cx="559.5"
+     inkscape:cy="395"
+     inkscape:window-width="1920"
+     inkscape:window-height="1018"
+     inkscape:window-x="-6"
+     inkscape:window-y="-6"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg173"
+     inkscape:document-units="mm" />
+  <defs
+     id="defs7">
+    <linearGradient
+       id="g1lshl0sq6eelw0"
+       x1="0.5"
+       x2="0.5"
+       y1="0"
+       y2="1">
+      <stop
+         offset="0%"
+         stop-color="#2FA4E7"
+         id="stop2" />
+      <stop
+         offset="100%"
+         stop-color="#2683B9"
+         id="stop4" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1106"
+       x1="175.4853"
+       y1="17.885133"
+       x2="175.4853"
+       y2="120.81022"
+       gradientTransform="scale(2.6414842,0.37857505)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1108"
+       x1="175.4853"
+       y1="17.885133"
+       x2="175.4853"
+       y2="120.81022"
+       gradientTransform="scale(2.6414842,0.37857505)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1110"
+       x1="64.158626"
+       y1="292.80741"
+       x2="64.158626"
+       y2="330.43753"
+       gradientTransform="scale(7.2249312,0.13840962)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1112"
+       x1="64.158626"
+       y1="292.80741"
+       x2="64.158626"
+       y2="330.43753"
+       gradientTransform="scale(7.2249312,0.13840962)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1114"
+       x1="59.005744"
+       y1="490.77141"
+       x2="59.005744"
+       y2="578.81905"
+       gradientTransform="scale(2.2596673,0.44254302)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1116"
+       x1="59.005744"
+       y1="490.77141"
+       x2="59.005744"
+       y2="578.81905"
+       gradientTransform="scale(2.2596673,0.44254302)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1118"
+       x1="21.572903"
+       y1="1550.9827"
+       x2="21.572903"
+       y2="1583.1735"
+       gradientTransform="scale(6.1805938,0.16179675)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1120"
+       x1="21.572903"
+       y1="1550.9827"
+       x2="21.572903"
+       y2="1583.1735"
+       gradientTransform="scale(6.1805938,0.16179675)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1122"
+       x1="171.38704"
+       y1="443.53182"
+       x2="171.38704"
+       y2="523.10437"
+       gradientTransform="scale(2.0421612,0.4896773)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1124"
+       x1="171.38704"
+       y1="443.53182"
+       x2="171.38704"
+       y2="523.10437"
+       gradientTransform="scale(2.0421612,0.4896773)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1126"
+       x1="62.660271"
+       y1="1401.6916"
+       x2="62.660271"
+       y2="1430.7839"
+       gradientTransform="scale(5.5856759,0.17902936)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1128"
+       x1="62.660271"
+       y1="1401.6916"
+       x2="62.660271"
+       y2="1430.7839"
+       gradientTransform="scale(5.5856759,0.17902936)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1130"
+       x1="59.04123"
+       y1="1172.0218"
+       x2="59.04123"
+       y2="1285.4525"
+       gradientTransform="scale(2.911102,0.34351253)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1132"
+       x1="59.04123"
+       y1="1172.0218"
+       x2="59.04123"
+       y2="1285.4525"
+       gradientTransform="scale(2.911102,0.34351253)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1134"
+       x1="21.585877"
+       y1="3474.4712"
+       x2="21.585877"
+       y2="3515.9422"
+       gradientTransform="scale(7.9623841,0.12559053)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1136"
+       x1="21.585877"
+       y1="3474.4712"
+       x2="21.585877"
+       y2="3515.9422"
+       gradientTransform="scale(7.9623841,0.12559053)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1138"
+       x1="187.37241"
+       y1="1204.3264"
+       x2="187.37241"
+       y2="1313.9356"
+       gradientTransform="scale(2.8130254,0.35548915)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1140"
+       x1="187.37241"
+       y1="1204.3264"
+       x2="187.37241"
+       y2="1313.9356"
+       gradientTransform="scale(2.8130254,0.35548915)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1142"
+       x1="68.504633"
+       y1="3553.7747"
+       x2="68.504633"
+       y2="3593.8486"
+       gradientTransform="scale(7.6941269,0.12996926)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1144"
+       x1="68.504633"
+       y1="3553.7747"
+       x2="68.504633"
+       y2="3593.8486"
+       gradientTransform="scale(7.6941269,0.12996926)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1146"
+       x1="242.40569"
+       y1="548.04579"
+       x2="242.40569"
+       y2="640.80755"
+       gradientTransform="scale(2.3806511,0.42005316)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1148"
+       x1="242.40569"
+       y1="548.04579"
+       x2="242.40569"
+       y2="640.80755"
+       gradientTransform="scale(2.3806511,0.42005316)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1150"
+       x1="88.625174"
+       y1="1718.8087"
+       x2="88.625174"
+       y2="1752.723"
+       gradientTransform="scale(6.511506,0.1535743)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1152"
+       x1="88.625174"
+       y1="1718.8087"
+       x2="88.625174"
+       y2="1752.723"
+       gradientTransform="scale(6.511506,0.1535743)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1154"
+       x1="354.63563"
+       y1="508.43971"
+       x2="354.63563"
+       y2="599.65716"
+       gradientTransform="scale(2.3410178,0.42716464)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1156"
+       x1="354.63563"
+       y1="508.43971"
+       x2="354.63563"
+       y2="599.65716"
+       gradientTransform="scale(2.3410178,0.42716464)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1158"
+       x1="129.65721"
+       y1="1606.8198"
+       x2="129.65721"
+       y2="1640.1695"
+       gradientTransform="scale(6.4031018,0.15617431)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1160"
+       x1="129.65721"
+       y1="1606.8198"
+       x2="129.65721"
+       y2="1640.1695"
+       gradientTransform="scale(6.4031018,0.15617431)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1162"
+       x1="344.81428"
+       y1="40.227477"
+       x2="344.81428"
+       y2="121.56572"
+       gradientTransform="scale(2.0874764,0.47904732)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1164"
+       x1="344.81428"
+       y1="40.227477"
+       x2="344.81428"
+       y2="121.56572"
+       gradientTransform="scale(2.0874764,0.47904732)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1166"
+       x1="126.06646"
+       y1="302.76615"
+       x2="126.06646"
+       y2="332.50397"
+       gradientTransform="scale(5.709621,0.17514297)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#g1lshl0sq6eelw0"
+       id="linearGradient1168"
+       x1="126.06646"
+       y1="302.76615"
+       x2="126.06646"
+       y2="332.50397"
+       gradientTransform="scale(5.709621,0.17514297)"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <g
+     id="g171"
+     transform="matrix(1.1869601,0,0,1.1869601,0.73252932,55.70009)">
+    <!--MD5=[2741598bdf59a7d7e0d5c97658fd3022]
+class Result-->
+    <rect
+       codeLine="13"
+       height="148.37041"
+       id="Result"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="fill:none;stroke:#2fa4e7;stroke-width:1.04167"
+       width="270.83331"
+       x="328.125"
+       y="7.2916999" />
+    <rect
+       fill="url(#g1lshl0sq6eelw0)"
+       height="37.923199"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="fill:url(#linearGradient1106);stroke:url(#linearGradient1108);stroke-width:1.04167"
+       width="270.83331"
+       x="328.125"
+       y="7.2916999"
+       id="rect10" />
+    <rect
+       fill="url(#g1lshl0sq6eelw0)"
+       height="4.1666999"
+       style="fill:url(#linearGradient1110);stroke:url(#linearGradient1112);stroke-width:1.04167"
+       width="270.83331"
+       x="328.125"
+       y="41.048199"
+       id="rect12" />
+    <rect
+       codeLine="13"
+       fill="none"
+       height="148.37041"
+       id="rect14"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="stroke:#2fa4e7;stroke-width:1.04167"
+       width="270.83331"
+       x="328.125"
+       y="7.2916999" />
+    <text
+       style="white-space:pre"
+       fill="#f8f9fa"
+       font-family="Roboto"
+       font-size="14.5833px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="42.708302"
+       x="442.1875"
+       y="31.237801"
+       id="text16">Result</text>
+    <line
+       style="stroke:#2fa4e7;stroke-width:1.04167"
+       x1="329.16669"
+       x2="597.91669"
+       y1="45.214802"
+       y2="45.214802"
+       id="line18" />
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="167.7083"
+       x="339.58331"
+       y="66.596497"
+       id="text20">attributes : Attributes</text>
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="226.0417"
+       x="339.58331"
+       y="92.124901"
+       id="text22">shapes     : std::vector&lt;Shape&gt;</text>
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="247.9167"
+       x="339.58331"
+       y="117.6534"
+       id="text24">materials  : std::vector&lt;Material&gt;</text>
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="131.25"
+       x="339.58331"
+       y="143.1819"
+       id="text26">error      : Error</text>
+    <!--MD5=[57efef740ff267ec24374a3accdf0f52]
+class Attributes-->
+    <rect
+       codeLine="20"
+       height="122.8419"
+       id="Attributes"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="fill:none;stroke:#2fa4e7;stroke-width:1.04167"
+       width="197.9167"
+       x="34.375"
+       y="217.7083" />
+    <rect
+       fill="url(#g1lshl0sq6eelw0)"
+       height="37.923199"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="fill:url(#linearGradient1114);stroke:url(#linearGradient1116);stroke-width:1.04167"
+       width="197.9167"
+       x="34.375"
+       y="217.7083"
+       id="rect29" />
+    <rect
+       fill="url(#g1lshl0sq6eelw0)"
+       height="4.1666999"
+       style="fill:url(#linearGradient1118);stroke:url(#linearGradient1120);stroke-width:1.04167"
+       width="197.9167"
+       x="34.375"
+       y="251.4648"
+       id="rect31" />
+    <rect
+       codeLine="20"
+       fill="none"
+       height="122.8419"
+       id="rect33"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="stroke:#2fa4e7;stroke-width:1.04167"
+       width="197.9167"
+       x="34.375"
+       y="217.7083" />
+    <text
+       style="white-space:pre"
+       fill="#f8f9fa"
+       font-family="Roboto"
+       font-size="14.5833px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="66.666702"
+       x="100"
+       y="241.6545"
+       id="text35">Attributes</text>
+    <line
+       style="stroke:#2fa4e7;stroke-width:1.04167"
+       x1="35.416698"
+       x2="231.25"
+       y1="255.6315"
+       y2="255.6315"
+       id="line37" />
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="175"
+       x="45.833302"
+       y="277.01309"
+       id="text39">positions : Array&lt;float&gt;</text>
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="175"
+       x="45.833302"
+       y="302.5416"
+       id="text41">texcoords : Array&lt;float&gt;</text>
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="175"
+       x="45.833302"
+       y="328.0701"
+       id="text43">normals   : Array&lt;float&gt;</text>
+    <!--MD5=[426e75666daf533f17226ff4c87e20fd]
+class Shape-->
+    <rect
+       codeLine="26"
+       height="122.8419"
+       id="Shape"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="fill:none;stroke:#2fa4e7;stroke-width:1.04167"
+       width="161.4583"
+       x="269.27081"
+       y="217.7083" />
+    <rect
+       fill="url(#g1lshl0sq6eelw0)"
+       height="37.923199"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="fill:url(#linearGradient1122);stroke:url(#linearGradient1124);stroke-width:1.04167"
+       width="161.4583"
+       x="269.27081"
+       y="217.7083"
+       id="rect46" />
+    <rect
+       fill="url(#g1lshl0sq6eelw0)"
+       height="4.1666999"
+       style="fill:url(#linearGradient1126);stroke:url(#linearGradient1128);stroke-width:1.04167"
+       width="161.4583"
+       x="269.27081"
+       y="251.4648"
+       id="rect48" />
+    <rect
+       codeLine="26"
+       fill="none"
+       height="122.8419"
+       id="rect50"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="stroke:#2fa4e7;stroke-width:1.04167"
+       width="161.4583"
+       x="269.27081"
+       y="217.7083" />
+    <text
+       style="white-space:pre"
+       fill="#f8f9fa"
+       font-family="Roboto"
+       font-size="14.5833px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="42.708302"
+       x="328.64581"
+       y="241.6545"
+       id="text52">Shape</text>
+    <line
+       style="stroke:#2fa4e7;stroke-width:1.04167"
+       x1="270.3125"
+       x2="429.6875"
+       y1="255.6315"
+       y2="255.6315"
+       id="line54" />
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="138.5417"
+       x="280.72919"
+       y="277.01309"
+       id="text56">name  : std::string</text>
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="87.5"
+       x="280.72919"
+       y="302.5416"
+       id="text58">mesh  : Mesh</text>
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="94.791702"
+       x="280.72919"
+       y="328.0701"
+       id="text60">lines : Lines</text>
+    <!--MD5=[49b4333bed3a745cc53311fcf54bbfcc]
+class Mesh-->
+    <rect
+       codeLine="32"
+       height="148.37041"
+       id="Mesh"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="fill:none;stroke:#2fa4e7;stroke-width:1.04167"
+       width="329.16669"
+       x="7.2916999"
+       y="403.125" />
+    <rect
+       fill="url(#g1lshl0sq6eelw0)"
+       height="37.923199"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="fill:url(#linearGradient1130);stroke:url(#linearGradient1132);stroke-width:1.04167"
+       width="329.16669"
+       x="7.2916999"
+       y="403.125"
+       id="rect63" />
+    <rect
+       fill="url(#g1lshl0sq6eelw0)"
+       height="4.1666999"
+       style="fill:url(#linearGradient1134);stroke:url(#linearGradient1136);stroke-width:1.04167"
+       width="329.16669"
+       x="7.2916999"
+       y="436.8815"
+       id="rect65" />
+    <rect
+       codeLine="32"
+       fill="none"
+       height="148.37041"
+       id="rect67"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="stroke:#2fa4e7;stroke-width:1.04167"
+       width="329.16669"
+       x="7.2916999"
+       y="403.125" />
+    <text
+       style="white-space:pre"
+       fill="#f8f9fa"
+       font-family="Roboto"
+       font-size="14.5833px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="36.458302"
+       x="153.6458"
+       y="427.07111"
+       id="text69">Mesh</text>
+    <line
+       style="stroke:#2fa4e7;stroke-width:1.04167"
+       x1="8.3332996"
+       x2="335.41669"
+       y1="441.04819"
+       y2="441.04819"
+       id="line71" />
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="247.9167"
+       x="18.75"
+       y="462.42981"
+       id="text73">indices             : Array&lt;Index&gt;</text>
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="298.95831"
+       x="18.75"
+       y="487.95831"
+       id="text75">num_face_vertices   : Array&lt;std::uint8_t&gt;</text>
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="298.95831"
+       x="18.75"
+       y="513.48669"
+       id="text77">material_ids        : Array&lt;std::int32_t&gt;</text>
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="306.25"
+       x="18.75"
+       y="539.0152"
+       id="text79">smoothing_group_ids : Array&lt;std::uint32_t&gt;</text>
+    <!--MD5=[7c37a91e969cd730cf6521ed75133ace]
+class Lines-->
+    <rect
+       codeLine="39"
+       height="97.3134"
+       id="Lines"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="fill:none;stroke:#2fa4e7;stroke-width:1.04167"
+       width="307.29169"
+       x="373.4375"
+       y="428.64581" />
+    <rect
+       fill="url(#g1lshl0sq6eelw0)"
+       height="37.923199"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="fill:url(#linearGradient1138);stroke:url(#linearGradient1140);stroke-width:1.04167"
+       width="307.29169"
+       x="373.4375"
+       y="428.64581"
+       id="rect82" />
+    <rect
+       fill="url(#g1lshl0sq6eelw0)"
+       height="4.1666999"
+       style="fill:url(#linearGradient1142);stroke:url(#linearGradient1144);stroke-width:1.04167"
+       width="307.29169"
+       x="373.4375"
+       y="462.40231"
+       id="rect84" />
+    <rect
+       codeLine="39"
+       fill="none"
+       height="97.3134"
+       id="rect86"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="stroke:#2fa4e7;stroke-width:1.04167"
+       width="307.29169"
+       x="373.4375"
+       y="428.64581" />
+    <text
+       style="white-space:pre"
+       fill="#f8f9fa"
+       font-family="Roboto"
+       font-size="14.5833px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="36.458302"
+       x="508.85419"
+       y="452.59201"
+       id="text88">Lines</text>
+    <line
+       style="stroke:#2fa4e7;stroke-width:1.04167"
+       x1="374.47919"
+       x2="679.6875"
+       y1="466.569"
+       y2="466.569"
+       id="line90" />
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="233.3333"
+       x="384.89581"
+       y="487.95059"
+       id="text92">indices           : Array&lt;Index&gt;</text>
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="284.375"
+       x="384.89581"
+       y="513.47913"
+       id="text94">num_line_vertices : Array&lt;std::int32_t&gt;</text>
+    <!--MD5=[90d32ccc189f11441a6ce7cbb63ad387]
+class Material-->
+    <rect
+       codeLine="44"
+       height="97.3134"
+       id="Material"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="fill:none;stroke:#2fa4e7;stroke-width:1.04167"
+       width="219.7917"
+       x="467.1875"
+       y="230.7292" />
+    <rect
+       fill="url(#g1lshl0sq6eelw0)"
+       height="37.923199"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="fill:url(#linearGradient1146);stroke:url(#linearGradient1148);stroke-width:1.04167"
+       width="219.7917"
+       x="467.1875"
+       y="230.7292"
+       id="rect97" />
+    <rect
+       fill="url(#g1lshl0sq6eelw0)"
+       height="4.1666999"
+       style="fill:url(#linearGradient1150);stroke:url(#linearGradient1152);stroke-width:1.04167"
+       width="219.7917"
+       x="467.1875"
+       y="264.48569"
+       id="rect99" />
+    <rect
+       codeLine="44"
+       fill="none"
+       height="97.3134"
+       id="rect101"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="stroke:#2fa4e7;stroke-width:1.04167"
+       width="219.7917"
+       x="467.1875"
+       y="230.7292" />
+    <text
+       style="white-space:pre"
+       fill="#f8f9fa"
+       font-family="Roboto"
+       font-size="14.5833px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="56.25"
+       x="548.95831"
+       y="254.67529"
+       id="text103">Material</text>
+    <line
+       style="stroke:#2fa4e7;stroke-width:1.04167"
+       x1="468.22919"
+       x2="685.9375"
+       y1="268.65231"
+       y2="268.65231"
+       id="line105" />
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="175"
+       x="478.64581"
+       y="290.034"
+       id="text107">name       : std::string</text>
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="196.875"
+       x="478.64581"
+       y="315.56241"
+       id="text109">parameters : ParameterTypes</text>
+    <!--MD5=[b8cfd8c4119a3b0a7a46bfc5fc780f85]
+class Error-->
+    <rect
+       codeLine="49"
+       height="122.8419"
+       id="Error"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="fill:none;stroke:#2fa4e7;stroke-width:1.04167"
+       width="212.5"
+       x="723.95831"
+       y="217.7083" />
+    <rect
+       fill="url(#g1lshl0sq6eelw0)"
+       height="37.923199"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="fill:url(#linearGradient1154);stroke:url(#linearGradient1156);stroke-width:1.04167"
+       width="212.5"
+       x="723.95831"
+       y="217.7083"
+       id="rect112" />
+    <rect
+       fill="url(#g1lshl0sq6eelw0)"
+       height="4.1666999"
+       style="fill:url(#linearGradient1158);stroke:url(#linearGradient1160);stroke-width:1.04167"
+       width="212.5"
+       x="723.95831"
+       y="251.4648"
+       id="rect114" />
+    <rect
+       codeLine="49"
+       fill="none"
+       height="122.8419"
+       id="rect116"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="stroke:#2fa4e7;stroke-width:1.04167"
+       width="212.5"
+       x="723.95831"
+       y="217.7083" />
+    <text
+       style="white-space:pre"
+       fill="#f8f9fa"
+       font-family="Roboto"
+       font-size="14.5833px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="32.291698"
+       x="814.0625"
+       y="241.6545"
+       id="text118">Error</text>
+    <line
+       style="stroke:#2fa4e7;stroke-width:1.04167"
+       x1="725"
+       x2="935.41669"
+       y1="255.6315"
+       y2="255.6315"
+       id="line120" />
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="189.5833"
+       x="735.41669"
+       y="277.01309"
+       id="text122">code     : std::error_code</text>
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="160.4167"
+       x="735.41669"
+       y="302.5416"
+       id="text124">line     : std::string</text>
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="160.4167"
+       x="735.41669"
+       y="328.0701"
+       id="text126">line_num : std::size_t</text>
+    <!--MD5=[15b9a87b033c6044cf0e9bbdacb18726]
+class Index-->
+    <rect
+       codeLine="55"
+       height="122.8419"
+       id="Index"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="fill:none;stroke:#2fa4e7;stroke-width:1.04167"
+       width="168.75"
+       x="635.41669"
+       y="19.7917" />
+    <rect
+       fill="url(#g1lshl0sq6eelw0)"
+       height="37.923199"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="fill:url(#linearGradient1162);stroke:url(#linearGradient1164);stroke-width:1.04167"
+       width="168.75"
+       x="635.41669"
+       y="19.7917"
+       id="rect129" />
+    <rect
+       fill="url(#g1lshl0sq6eelw0)"
+       height="4.1666999"
+       style="fill:url(#linearGradient1166);stroke:url(#linearGradient1168);stroke-width:1.04167"
+       width="168.75"
+       x="635.41669"
+       y="53.548199"
+       id="rect131" />
+    <rect
+       codeLine="55"
+       fill="none"
+       height="122.8419"
+       id="rect133"
+       rx="4.1666999"
+       ry="4.1666999"
+       style="stroke:#2fa4e7;stroke-width:1.04167"
+       width="168.75"
+       x="635.41669"
+       y="19.7917" />
+    <text
+       style="white-space:pre"
+       fill="#f8f9fa"
+       font-family="Roboto"
+       font-size="14.5833px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="36.458302"
+       x="701.5625"
+       y="43.737801"
+       id="text135">Index</text>
+    <line
+       style="stroke:#2fa4e7;stroke-width:1.04167"
+       x1="636.45831"
+       x2="803.125"
+       y1="57.714802"
+       y2="57.714802"
+       id="line137" />
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="145.8333"
+       x="646.875"
+       y="79.096497"
+       id="text139">position_index : int</text>
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="145.8333"
+       x="646.875"
+       y="104.6249"
+       id="text141">texcoord_index : int</text>
+    <text
+       style="white-space:pre"
+       fill="#343a40"
+       font-family="'Roboto Mono'"
+       font-size="11.4583px"
+       font-weight="bold"
+       lengthAdjust="spacing"
+       textLength="145.8333"
+       x="646.875"
+       y="130.1534"
+       id="text143">normal_index   : int</text>
+    <!--MD5=[797ab0072085b81b51f9a187c3f52d31]
+reverse link Result to Attributes-->
+    <path
+       codeLine="61"
+       d="m 328.7917,162.2083 c -32.2396,19.1146 -66.0625,39.1771 -96.3542,57.1459"
+       fill="none"
+       id="Result-backto-Attributes"
+       style="stroke:#2fa4e7;stroke-width:3.125" />
+    <polygon
+       fill="#2fa4e7"
+       points="337.3307,161.9791 340.5833,155.2083 333.0823,154.8101 329.8297,161.5809 "
+       style="stroke:#2fa4e7;stroke-width:3.125"
+       id="polygon146" />
+    <!--MD5=[b26d87bfe26212cce0d51022ec7224c9]
+reverse link Result to Shape-->
+    <path
+       codeLine="62"
+       d="m 414.1979,167.4063 c -9.8125,16.9166 -19.9166,34.3437 -29.125,50.2291"
+       fill="none"
+       id="Result-backto-Shape"
+       style="stroke:#2fa4e7;stroke-width:3.125" />
+    <polygon
+       fill="#2fa4e7"
+       points="421.7323,162.7051 421.2604,155.2083 414.5218,158.5272 414.9937,166.024 "
+       style="stroke:#2fa4e7;stroke-width:3.125"
+       id="polygon149" />
+    <text
+       style="white-space:pre"
+       fill="#ff0000"
+       font-family="Verdana"
+       font-size="12.5px"
+       lengthAdjust="spacing"
+       textLength="8.3332996"
+       x="402.39169"
+       y="180.9104"
+       id="text151">1</text>
+    <text
+       style="white-space:pre"
+       fill="#ff0000"
+       font-family="Verdana"
+       font-size="12.5px"
+       lengthAdjust="spacing"
+       textLength="34.375"
+       x="347.1138"
+       y="201.1391"
+       id="text153">many</text>
+    <!--MD5=[9b3828d4562c01e8e0a4c27625b85343]
+reverse link Result to Material-->
+    <path
+       codeLine="63"
+       d="m 512.7604,167.1875 c 12.6146,21.7604 25.7396,44.3958 36.8229,63.5"
+       fill="none"
+       id="Result-backto-Material"
+       style="stroke:#2fa4e7;stroke-width:3.125" />
+    <polygon
+       fill="#2fa4e7"
+       points="512.5615,158.5272 505.8229,155.2083 505.3511,162.7051 512.0897,166.024 "
+       style="stroke:#2fa4e7;stroke-width:3.125"
+       id="polygon156" />
+    <text
+       style="white-space:pre"
+       fill="#ff0000"
+       font-family="Verdana"
+       font-size="12.5px"
+       lengthAdjust="spacing"
+       textLength="8.3332996"
+       x="495.67471"
+       y="180.9104"
+       id="text158">1</text>
+    <text
+       style="white-space:pre"
+       fill="#ff0000"
+       font-family="Verdana"
+       font-size="12.5px"
+       lengthAdjust="spacing"
+       textLength="34.375"
+       x="502.35971"
+       y="214.32629"
+       id="text160">many</text>
+    <!--MD5=[0007687a1d8f41054b7648ca216a6475]
+reverse link Result to Error-->
+    <path
+       codeLine="64"
+       d="m 611.1979,161.1563 c 37.7188,20.1458 77.5313,41.4062 112.7084,60.1979"
+       fill="none"
+       id="Result-backto-Error"
+       style="stroke:#2fa4e7;stroke-width:3.125" />
+    <polygon
+       fill="#2fa4e7"
+       points="606.5065,153.919 599.0313,154.6563 602.5869,161.273 610.0622,160.5358 "
+       style="stroke:#2fa4e7;stroke-width:3.125"
+       id="polygon163" />
+    <!--MD5=[55402fa06c1dd146aa9ad6da4d2cb04a]
+reverse link Shape to Mesh-->
+    <path
+       codeLine="66"
+       d="m 285.4688,351.1563 c -15.3334,16.8541 -31.7188,34.8645 -47.125,51.8125"
+       fill="none"
+       id="Shape-backto-Mesh"
+       style="stroke:#2fa4e7;stroke-width:3.125" />
+    <polygon
+       fill="#2fa4e7"
+       points="293.7363,348.2597 294.8646,340.8333 287.5755,342.6482 286.4473,350.0745 "
+       style="stroke:#2fa4e7;stroke-width:3.125"
+       id="polygon166" />
+    <!--MD5=[aa5e80ffa1d1115e58ffb4450a9432b4]
+reverse link Shape to Lines-->
+    <path
+       codeLine="67"
+       d="m 413.9479,350.9271 c 23.2813,25.75 49.0417,54.2292 70.0834,77.5104"
+       fill="none"
+       id="Shape-backto-Lines"
+       style="stroke:#2fa4e7;stroke-width:3.125" />
+    <polygon
+       fill="#2fa4e7"
+       points="412.0944,342.6767 404.8125,340.8333 405.9116,348.264 413.1935,350.1074 "
+       style="stroke:#2fa4e7;stroke-width:3.125"
+       id="polygon169" />
+    <!--MD5=[8b578e5770c59819c73610aa709905fe]
+@startuml
+
+!theme cerulean-outline
+
+hide circle
+
+skinparam ClassFontName Roboto
+skinparam ClassFontStyle bold
+skinparam ClassFontSize 14
+
+skinparam ClassAttributeFontName Roboto Mono
+skinparam ClassAttributeFontStyle bold
+
+class Result {
+    attributes : Attributes
+    shapes     : std::vector<Shape>
+    materials  : std::vector<Material>
+    error      : Error
+}
+
+class Attributes {
+    positions : Array<float>
+    texcoords : Array<float>
+    normals   : Array<float>
+}
+
+class Shape {
+    name  : std::string
+    mesh  : Mesh
+    lines : Lines
+}
+
+class Mesh {
+    indices             : Array<Index>
+    num_face_vertices   : Array<std::uint8_t>
+    material_ids        : Array<std::int32_t>  
+    smoothing_group_ids : Array<std::uint32_t>
+}
+
+class Lines {
+    indices           : Array<Index>
+    num_line_vertices : Array<std::int32_t>
+}
+
+class Material {
+    name       : std::string
+    parameters : ParameterTypes
+}
+
+class Error {
+    code     : std::error_code
+    line     : std::string     
+    line_num : std::size_t
+}
+
+class Index {
+    position_index : int
+    texcoord_index : int
+    normal_index   : int
+}
+
+Result *- - Attributes
+Result "1" *- - "many" Shape #text:red
+Result "1" *- - "many" Material #text:red
+Result *- - Error
+
+Shape *- - Mesh
+Shape *- - Lines
+
+hide methods
+@enduml
+
+@startuml
+
+
+
+
+skinparam backgroundColor transparent
+skinparam useBetaStyle false
+
+
+
+
+
+
+
+skinparam defaultFontName       "Verdana"
+skinparam defaultFontSize       12
+skinparam dpi                   100
+skinparam shadowing             false
+skinparam roundcorner           8
+skinparam ParticipantPadding    40
+skinparam BoxPadding            40
+skinparam Padding               5
+skinparam ArrowColor            #868E96
+skinparam stereotype {
+    CBackgroundColor #EDF0F2
+    CBorderColor #BABDBF
+    ABackgroundColor #8FB961
+    ABorderColor $SUCCESS_DARK
+    IBackgroundColor #D2494E
+    IBorderColor $DANGER_DARK
+    EBackgroundColor #E47833
+    EBorderColor $WARNING_DARK
+    NBackgroundColor #35638F
+    NBorderColor $INFO_DARK
+}
+skinparam title {
+	FontColor	                 #2FA4E7
+	BorderColor	                 #BABDBF
+	FontSize	    	         20
+	BorderRoundCorner            8
+	BorderThickness 	         1
+	BackgroundColor              transparent
+}
+
+skinparam legend {
+	BackgroundColor transparent
+	BorderColor #BABDBF
+	FontColor #343A40
+}
+
+skinparam swimlane {
+	BorderColor #033C73
+	BorderThickness 2
+	TitleBackgroundColor  #EDF0F2-#E9ECEF
+	TitleFontColor #2FA4E7
+}
+
+
+skinparam activity {
+		FontColor #2FA4E7
+	BorderColor #2FA4E7
+	BackgroundColor transparent
+	BarColor #73A839
+	StartColor #033C73
+	EndColor #033C73
+	DiamondBackgroundColor transparent
+  	DiamondBorderColor #BABDBF
+	DiamondFontColor #BABDBF
+}
+
+
+skinparam participant {
+		FontColor #2FA4E7
+	BorderColor #2FA4E7
+	BackgroundColor transparent
+	ParticipantBorderThickness 2
+}
+
+
+skinparam actor {
+		FontColor #2FA4E7
+	BorderColor #2FA4E7
+	BackgroundColor transparent
+}
+
+
+skinparam arrow {
+	Thickness 3
+	Color #2FA4E7
+	FontColor #343A40
+}
+
+
+skinparam sequence {
+	BorderColor #2FA4E7
+	TitleFontColor #2FA4E7
+	BackgroundColor transparent
+	StartColor #2FA4E7
+	EndColor #2FA4E7
+	BoxBackgroundColor transparent
+	BoxBorderColor #868E96
+	BoxFontColor #343A40
+	LifeLineBorderColor #BABDBF
+	LifeLineBorderThickness 2
+	LifeLineBackgroundColor transparent
+	GroupBorderColor #868E96
+	GroupFontColor #343A40
+	GroupHeaderFontColor #033C73
+	DividerBackgroundColor transparent
+    DividerBorderColor #868E96
+    DividerBorderThickness 2
+    DividerFontColor #343A40
+	ReferenceBackgroundColor transparent
+	ReferenceBorderColor #868E96
+	ReferenceFontColor #343A40
+	ReferenceHeaderFontColor #033C73
+}
+
+
+skinparam partition {
+	BorderColor #2FA4E7
+	FontColor #2FA4E7
+	BackgroundColor transparent
+}
+
+
+skinparam collections {
+		FontColor #2FA4E7
+	BorderColor #2FA4E7
+	BackgroundColor transparent
+}
+
+
+skinparam control {
+		FontColor #2FA4E7
+	BorderColor #2FA4E7
+	BackgroundColor transparent
+}
+
+
+skinparam entity {
+		FontColor #2FA4E7
+	BorderColor #2FA4E7
+	BackgroundColor transparent
+}
+
+
+skinparam boundary {
+		FontColor #2FA4E7
+	BorderColor #2FA4E7
+	BackgroundColor transparent
+}
+
+
+skinparam agent {
+	BackgroundColor transparent
+	BorderColor #999999
+	FontColor #333333
+}
+
+
+skinparam note {
+	BorderThickness 1
+	BackgroundColor transparent
+	BorderColor #033C73
+	FontColor #033C73
+}
+
+
+skinparam artifact {
+	BackgroundColor transparent
+	BorderColor #868E96
+	FontColor #868E96
+}
+
+
+skinparam component {
+		FontColor #2FA4E7
+	BorderColor #2FA4E7
+	BackgroundColor transparent
+}
+
+
+skinparam interface {
+	BackgroundColor  transparent
+	BorderColor  #C71C22
+	FontColor #343A40
+}
+
+
+skinparam storage {
+	BackgroundColor transparent
+  	BorderColor #DD5600
+	FontColor #DD5600
+}
+
+
+skinparam node {
+	BackgroundColor transparent
+	BorderColor #343A40
+	FontColor #343A40
+}
+
+
+skinparam cloud {
+	BackgroundColor #F2FCFE-#eeeeee
+	BorderColor #F2FCFE
+	FontColor #343A40
+}
+
+
+skinparam database {
+		FontColor #2FA4E7
+	BorderColor #2FA4E7
+	BackgroundColor transparent
+}
+
+
+skinparam class {
+		FontColor #2FA4E7
+	BorderColor #2FA4E7
+	BackgroundColor transparent
+	FontColor #F8F9FA
+	HeaderBackgroundColor #2FA4E7-#2683B9
+	StereotypeFontColor #343A40
+	BorderThickness 1
+	AttributeFontColor #343A40
+	AttributeFontSize 11
+}
+
+
+skinparam object {
+		FontColor #2FA4E7
+	BorderColor #2FA4E7
+	BackgroundColor transparent
+	StereotypeFontColor #343A40
+	BorderThickness 1
+	AttributeFontColor #BABDBF
+	AttributeFontSize 11
+}
+
+
+skinparam usecase {
+		FontColor #2FA4E7
+	BorderColor #2FA4E7
+	BackgroundColor transparent
+	BorderThickness 2
+	StereotypeFontColor #2FA4E7
+}
+
+
+skinparam rectangle {
+		FontColor #2FA4E7
+	BorderColor #2FA4E7
+	BackgroundColor transparent
+	BorderThickness 2
+	StereotypeFontColor #2FA4E7
+}
+
+
+skinparam package {
+	BackgroundColor transparent
+  	BorderColor #2FA4E7
+	FontColor #2FA4E7
+	BorderThickness 2
+}
+
+
+skinparam folder {
+	BackgroundColor transparent
+  	BorderColor #DD5600
+	FontColor #DD5600
+	BorderThickness 2
+}
+
+
+skinparam frame {
+	BackgroundColor transparent
+  	BorderColor #033C73
+	FontColor #033C73
+	BorderThickness 2
+}
+
+
+skinparam state {
+		FontColor #2FA4E7
+	BorderColor #2FA4E7
+	BackgroundColor transparent
+	StartColor #033C73
+	EndColor #033C73
+	AttributeFontColor #BABDBF
+	AttributeFontSize 11
+}
+
+
+skinparam queue {
+		FontColor #2FA4E7
+	BorderColor #2FA4E7
+	BackgroundColor transparent
+}
+
+
+skinparam card {
+	BackgroundColor transparent
+	BorderColor #033C73
+	FontColor #033C73
+}
+
+
+skinparam file {
+	BackgroundColor transparent
+	BorderColor #868E96
+	FontColor #868E96
+}
+
+
+skinparam stack {
+		FontColor #2FA4E7
+	BorderColor #2FA4E7
+	BackgroundColor transparent
+}
+
+
+
+
+hide circle
+
+skinparam ClassFontName Roboto
+skinparam ClassFontStyle bold
+skinparam ClassFontSize 14
+
+skinparam ClassAttributeFontName Roboto Mono
+skinparam ClassAttributeFontStyle bold
+
+class Result {
+    attributes : Attributes
+    shapes     : std::vector<Shape>
+    materials  : std::vector<Material>
+    error      : Error
+}
+
+class Attributes {
+    positions : Array<float>
+    texcoords : Array<float>
+    normals   : Array<float>
+}
+
+class Shape {
+    name  : std::string
+    mesh  : Mesh
+    lines : Lines
+}
+
+class Mesh {
+    indices             : Array<Index>
+    num_face_vertices   : Array<std::uint8_t>
+    material_ids        : Array<std::int32_t>  
+    smoothing_group_ids : Array<std::uint32_t>
+}
+
+class Lines {
+    indices           : Array<Index>
+    num_line_vertices : Array<std::int32_t>
+}
+
+class Material {
+    name       : std::string
+    parameters : ParameterTypes
+}
+
+class Error {
+    code     : std::error_code
+    line     : std::string     
+    line_num : std::size_t
+}
+
+class Index {
+    position_index : int
+    texcoord_index : int
+    normal_index   : int
+}
+
+Result *- - Attributes
+Result "1" *- - "many" Shape #text:red
+Result "1" *- - "many" Material #text:red
+Result *- - Error
+
+Shape *- - Mesh
+Shape *- - Lines
+
+hide methods
+@enduml
+
+PlantUML version 1.2021.7(Sun May 23 08:40:07 EDT 2021)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Default Encoding: UTF-8
+Language: en
+Country: null
+-->
+  </g>
+</svg>
