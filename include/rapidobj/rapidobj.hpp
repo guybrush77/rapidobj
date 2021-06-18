@@ -53,12 +53,22 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 
 #endif
 
+#define RAPIDOBJ_VERSION_MAJOR 0
+#define RAPIDOBJ_VERSION_MINOR 1
+#define RAPIDOBJ_VERSION_PATCH 0
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Public API Begins
 //
 
 namespace rapidobj {
+
+static constexpr struct {
+    int Major;
+    int Minor;
+    int Patch;
+} Version = { RAPIDOBJ_VERSION_MAJOR, RAPIDOBJ_VERSION_MINOR, RAPIDOBJ_VERSION_PATCH };
 
 template <typename T>
 class Array final {
