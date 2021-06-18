@@ -25,6 +25,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cassert>
 #include <cfloat>
 #include <charconv>
@@ -4673,7 +4674,7 @@ inline auto ParseMaterialFile(std::filesystem::path filepath)
 inline void DispatchMergeTasks(const std::vector<MergeTask>& tasks, SharedContext* context)
 {
     while (true) {
-        auto fetched_index = std::atomic_fetch_add(&context->merging.task_index, 1);
+        auto fetched_index = std::atomic_fetch_add(&context->merging.task_index, size_t(1));
 
         if (fetched_index >= tasks.size()) {
             break;
@@ -4690,7 +4691,7 @@ inline void DispatchMergeTasks(const std::vector<MergeTask>& tasks, SharedContex
         }
     }
 
-    if (1 == std::atomic_fetch_sub(&context->merging.thread_count, 1)) {
+    if (1 == std::atomic_fetch_sub(&context->merging.thread_count, size_t(1))) {
         context->merging.completed.set_value();
     }
 }
@@ -5464,7 +5465,7 @@ inline void ProcessBlocks(
         ProcessBlocksImpl(&reader, block_begin, block_end, bytes_per_block, stop_parsing_after_eol, chunk, context);
     }
 
-    if (1 == std::atomic_fetch_sub(&context->parsing.thread_count, 1)) {
+    if (1 == std::atomic_fetch_sub(&context->parsing.thread_count, size_t(1))) {
         context->parsing.completed.set_value();
     }
 }
@@ -5805,17 +5806,17 @@ TriangulateTasksParallel(size_t concurrency, const Array<float>& positions, cons
     bool success     = true;
 
     auto func = [&]() {
-        auto fetched_index = std::atomic_fetch_add(&task_index, 1);
+        auto fetched_index = std::atomic_fetch_add(&task_index, size_t(1));
 
         while (fetched_index < tasks.size()) {
             success = TriangulateSingleTask(positions, tasks[fetched_index]);
             if (!success) {
                 break;
             }
-            fetched_index = std::atomic_fetch_add(&task_index, 1);
+            fetched_index = std::atomic_fetch_add(&task_index, size_t(1));
         }
 
-        if (1 == std::atomic_fetch_sub(&num_threads, 1)) {
+        if (1 == std::atomic_fetch_sub(&num_threads, size_t(1))) {
             completed.set_value();
         }
     };
