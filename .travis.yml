@@ -1,15 +1,31 @@
-sudo: required
-language: cpp
+arch: amd64
 os: linux
+language: cpp
+dist: bionic
 
 matrix:
   include:
+
     - os: linux
       addons:
         apt:
           sources: ubuntu-toolchain-r-test
           packages: ["g++-8", "libaio-dev"]
       env: COMPILER=g++-8
+
+    - os: linux
+      addons:
+        apt:
+          sources: ubuntu-toolchain-r-test
+          packages: ["g++-9", "libaio-dev"]
+      env: COMPILER=g++-9
+
+    - os: linux
+      addons:
+        apt:
+          sources: ubuntu-toolchain-r-test
+          packages: ["g++-10", "libaio-dev"]
+      env: COMPILER=g++-10
 
 install:
   - pushd ${HOME}
