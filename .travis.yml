@@ -13,7 +13,6 @@ matrix:
 
 install:
   - pushd ${HOME}
-  - mkdir build
   - mkdir deps
   - cd deps
   - |
