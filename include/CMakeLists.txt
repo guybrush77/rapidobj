@@ -14,6 +14,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     find_package(Threads REQUIRED)
     find_package(Aio REQUIRED)
     target_link_libraries(rapidobj INTERFACE Threads::Threads aio)
+    target_link_libraries(rapidobj INTERFACE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
 endif()
 
 write_basic_package_version_file(RapidObjConfigVersion.cmake VERSION ${VERSION} COMPATIBILITY AnyNewerVersion)

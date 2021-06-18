@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/guybrush77/rapidobj.svg?branch=master)](https://travis-ci.com/guybrush77/rapidobj)
+
 # Introduction
 
 Rapidobj is a single header C++17 library that loads and parses [Wavefront .obj files](https://en.wikipedia.org/wiki/Wavefront_.obj_file).
