@@ -1,0 +1,35 @@
+sudo: required
+language: cpp
+os: linux
+
+matrix:
+  include:
+    - os: linux
+      addons:
+        apt:
+          sources: ubuntu-toolchain-r-test
+          packages: ["g++-8", "libaio-dev"]
+      env: COMPILER=g++-8
+
+install:
+  - pushd ${HOME}
+  - mkdir build
+  - mkdir deps
+  - cd deps
+  - |
+    CMAKE_URL="https://cmake.org/files/v3.14/cmake-3.14.7-Linux-x86_64.tar.gz"
+    mkdir cmake
+    travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
+    export PATH=${HOME}/deps/cmake/bin:${PATH}
+  - popd
+  - cmake --version
+
+script: >
+    cmake -B ${HOME}/build
+    -DCMAKE_CXX_COMPILER=$COMPILER
+    -DCMAKE_BUILD_TYPE=Release
+    -DRAPIDOBJ_BuildTools=ON
+    -DRAPIDOBJ_BuildTests=ON
+    -DRAPIDOBJ_BuildExamples=ON .
+    &&
+    cmake --build ${HOME}/build
