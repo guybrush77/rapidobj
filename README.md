@@ -6,7 +6,114 @@ Rapidobj is a single header C++17 library that loads and parses [Wavefront .obj 
 
 The .obj file format was first used by Wavefront Technologies around 1990. However, this 3D geometry file format did not age well. An .obj file is a text file and, consequently, large models take a lot of of disk space and are slow to load and parse. Moreover, after loading and parsing .obj files, additional processing steps are required to transform the data into a format suitable for hardware rendering.
 
-Rapidobj library, as implied by its name, is designed to quickly load and parse large .obj files. It is optimised to take advantage of modern computer hardware and is well suited for processing large .obj files on computers with multi-core CPUs and fast solid-state disk drives. The user-facing interface is heavily influenced by another single header C++ library, [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader). 
+Rapidobj library, as implied by its name, is designed to quickly load and parse large .obj files. It is optimised to take advantage of modern computer hardware and is well suited for processing large .obj files on computers with multi-core CPUs and fast solid-state disk drives. The user-facing interface is heavily influenced by another single header C++ library, [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader).
+
+# Integration
+
+### Prerequisites
+
+You will need a C++ compiler that fully supports C++17 standard. In practice, this means:
+* GCC 8 or higher
+* MSVC 19.14 or higher
+* Clang 7 or higher
+
+If you intend to use CMake as your build system, you will need to install CMake version 3.14 or higher.
+
+If building on Linux, make sure that the _libaio_ library and its header files are installed on your system. On Debian, type:
+```
+$ sudo apt install libaio-dev
+```
+On RHEL or Fedora, type:
+```
+$ sudo yum install libaio-devel
+```
+
+### Manual Integration
+
+The simplest way to integrate the library in your project is to copy the header file, ```rapidobj.hpp```, to a location that is in your compiler's include path. To use the library from your application, include the header file:
+
+```cpp
+#include "rapidobj.hpp"
+```
+To compile your project, make sure to use the C++17 switch when compiling (```-std=c++17``` for g++ and clang, ```/std:c++17``` for MSVC).
+
+There are some extra considerations when building a Linux project: you need to link your application against _libpthread_ and _libaio_ libraries. For example, assuming g++ compiler:
+```
+$ g++ -std=c++17 my_src.cpp -pthread -laio -o my_app
+```
+> :warning: If you are using gcc version 8, you might also have to link against the _stdc++fs_ library (because _std::filesystem_ used by RapidObj is not part of _libstdc++_ for gcc versions less than 9).
+
+### CMake Integration
+
+#### External
+
+This section explains how to use RapidObj external to your project. If using the command line, perform cmake configuration and generation steps from inside the RapidObj folder:
+```
+$ cmake -B build .
+```
+The next step is to actually install the RapidObj package:
+```
+$ cd build
+$ sudo make install
+```
+The install command will copy the files to well defined system directories. Note that this command will likely requires administrative access.
+
+The only remaining step is to find the RapidObj package from inside your own CMakeLists.txt file and link against it. For example:
+```cmake
+add_executable(my_app my_src.cpp)
+
+find_package(RapidObj REQUIRED)
+
+target_link_libraries(my_app PRIVATE rapidobj::rapidobj)
+```
+In some cases, it may be desirable to install RapidObj to a custom location. For instance, to install RapidObj in a subfolder of your home directory, cmake configuration and generation steps might look as follows:
+```
+$ cmake -B build -DRAPIDOBJ_INCLUDE_DIR=${HOME}/local/include -DRAPIDOBJ_CMAKE_DIR=${HOME}/local/cmake .
+```
+CMake cache variable RAPIDOBJ_INCLUDE_DIR is used to specify the header file install location. Similarly, RAPIDOBJ_CMAKE_DIR is used to specify cmake files install location.
+
+The install step is almost the same as before:
+```
+$ cd build
+$ make install
+```
+The only difference is that administrative access (i.e. sudo) is no longer required since all the files will be copied to the user home folder, as opposed to system folders.
+
+Because the files have been installed to a custom location that CMake does not know about, CMake cannot find the RapidObj package automatically. We can fix this by providing a hint about the cmake files whereabouts:
+
+```cmake
+add_executable(my_app my_src.cpp)
+
+find_package(RapidObj REQUIRED HINTS $ENV{HOME}/local/cmake)
+
+target_link_libraries(my_app PRIVATE rapidobj::rapidobj)
+```
+Once the package has been successfully installed, RapidObj folder can be deleted.
+
+#### Embedded
+
+Another way to use RapidObj is to embed it inside your project. In your project's root, create a folder named thirdparty and then copy RapidObj to this folder. Installation is not required; it is sufficient to add RapidObj's subfolder to your project:
+```cmake
+add_executable(my_app my_src.cpp)
+
+add_subdirectory(thirdparty/rapidobj)
+
+target_link_libraries(my_app PRIVATE rapidobj::rapidobj)
+```
+If you do not wish to manually download and place RapidObj files, you can automate these steps by using CMake's FetchContent module:
+```cmake
+add_executable(my_app my_src.cpp)
+
+include(FetchContent)
+
+FetchContent_Declare(rapidobj
+    GIT_REPOSITORY  https://github.com/guybrush77/rapidobj.git
+    GIT_TAG         origin/master)
+
+FetchContent_MakeAvailable(rapidobj)
+
+target_link_libraries(my_app PRIVATE rapidobj::rapidobj)
+```
 
 # Using Rapidobj API
 
@@ -96,7 +203,7 @@ There are a few things to note:
 * The smoothing group IDs for both faces are set to 0 in the mesh ```smoothing_group_ids``` array. Value of 0 indicates that the face does not belong to any smoothing group.
 
 # Using Rapidobj Result
-Typically, parsed .obj data cannot be used as is. For instance, for hardware rendering, a number of additional processing steps are required so that the data is in a format that can be easily consumed by a GPU. Rapidobj provides one convenience function, ```Triangulate()```, to assist with this task. Other tasks must be implemented by the rendering application. These may include:
+Typically, parsed .obj data cannot be used as is. For instance, for hardware rendering, a number of additional processing steps are required so that the data is in a format easily consumed by a GPU. Rapidobj provides one convenience function, ```Triangulate()```, to assist with this task. Other tasks must be implemented by the rendering application. These may include:
 * Gathering all the attributes so that the vertex data is in a single array of interleaved attributes. This step may optionally include vertex deduplication.
 * Generate normals, in case they are not provided in the .obj file. This step may use smoothing groups (if any) to create higher quality normals.
 * Optionally optimise the meshes for rendering based on some criteria such as: material type, mesh size, number of batches to be submitted, etc.
