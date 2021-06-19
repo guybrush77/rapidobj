@@ -7,7 +7,7 @@ target_compile_features(rapidobj INTERFACE cxx_std_17)
 
 target_include_directories(rapidobj INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:.>
+    $<INSTALL_INTERFACE:${RAPIDOBJ_INCLUDE_DIR}>
 )
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
@@ -19,12 +19,15 @@ endif()
 
 write_basic_package_version_file(RapidObjConfigVersion.cmake VERSION ${VERSION} COMPATIBILITY AnyNewerVersion)
 
-install(TARGETS rapidobj EXPORT RapidObj DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(EXPORT RapidObj DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/RapidObj NAMESPACE rapidobj::)
-install(FILES ${PROJECT_SOURCE_DIR}/cmake/RapidObjConfig.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/RapidObj)
-install(FILES ${PROJECT_BINARY_DIR}/include/RapidObjConfigVersion.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/RapidObj)
-install(DIRECTORY rapidobj DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+set(DESTINATION_CMAKE_DIR "${RAPIDOBJ_CMAKE_DIR}/RapidObj")
+set(DESTINATION_INCLUDE_DIR "${RAPIDOBJ_INCLUDE_DIR}/rapidobj")
 
+install(TARGETS rapidobj EXPORT RapidObj)
+install(EXPORT RapidObj DESTINATION ${DESTINATION_CMAKE_DIR} NAMESPACE rapidobj::)
+install(FILES ${PROJECT_SOURCE_DIR}/cmake/RapidObjConfig.cmake DESTINATION ${DESTINATION_CMAKE_DIR})
+install(FILES ${PROJECT_BINARY_DIR}/include/RapidObjConfigVersion.cmake DESTINATION ${DESTINATION_CMAKE_DIR})
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
-    install(FILES ${PROJECT_SOURCE_DIR}/cmake/FindAio.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/RapidObj)
+    install(FILES ${PROJECT_SOURCE_DIR}/cmake/FindAio.cmake DESTINATION ${DESTINATION_CMAKE_DIR})
 endif()
+
+install(FILES rapidobj/rapidobj.hpp DESTINATION ${DESTINATION_INCLUDE_DIR})
