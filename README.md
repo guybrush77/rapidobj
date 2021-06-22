@@ -1,24 +1,26 @@
 [![Build Status](https://travis-ci.com/guybrush77/rapidobj.svg?branch=master)](https://travis-ci.com/guybrush77/rapidobj)
 
-- [Introduction](#introduction)
+# RapidObj
+
+- [About](#about)
 - [Integration](#integration)
   - [Prerequisites](#prerequisites)
   - [Manual Integration](#manual-integration)
   - [CMake Integration](#cmake-integration)
 - [API](#api)
-- [Rapidobj Result](#rapidobj-result)
+- [RapidObj Result](#rapidobj-result)
 - [Next Steps](#next-steps)
-- [OS Support](#os-Support)
+- [OS Support](#os-support)
 - [Third-party Tools and Resources](#third-party-tools-and-resources)
 - [License](#license)
 
-# Introduction
+# About
 
-Rapidobj is an easy-to-use, single-header C++17 library that loads and parses [Wavefront .obj files](https://en.wikipedia.org/wiki/Wavefront_.obj_file).
+RapidObj is an easy-to-use, single-header C++17 library that loads and parses [Wavefront .obj files](https://en.wikipedia.org/wiki/Wavefront_.obj_file).
 
-The .obj file format was first used by Wavefront Technologies around 1990. However, this 3D geometry file format did not age well. An .obj file is a text file and, consequently, large models take a lot of of disk space and are slow to load and parse. Moreover, after loading and parsing .obj files, additional processing steps are required to transform the data into a format suitable for hardware (i.e. GPU) rendering. Nevertheless, .obj files are common enough in the wild that it's useful to have an easy way to parse them.
+The .obj file format was first used by Wavefront Technologies around 1990. However, this 3D geometry file format did not age well. An .obj file is a text file and, consequently, large models take a lot of of disk space and are slow to load and parse. Moreover, after loading and parsing .obj files, additional processing steps are required to transform the data into a format suitable for hardware (i.e. GPU) rendering. Nevertheless, .obj files are common enough in the wild that it's useful to have a convenient way to parse them.
 
-Rapidobj's API was influenced by another single header C++ library, [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader). From user's point of view, the two libraries should look fairly similar. That said, tinyobjloader has been around for some time; it is a mature and well tested library. So, why use Rapidobj library? The short answer is, it's fast - and especially so when parsing large files! It was designed to take full advantage of modern computer hardware. See the [Benchmarks](docs/BENCHMARKS.md) page.
+RapidObj's API was influenced by another single header C++ library, [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader). From user's point of view, the two libraries should look fairly similar. That said, tinyobjloader has been around for some time; it is a mature and well tested library. So, why use RapidObj library? The short answer is, it's fast - and especially so when parsing large files! It was designed to take full advantage of modern computer hardware. See the [Benchmarks](docs/BENCHMARKS.md) page.
 
 # Integration
 
@@ -129,7 +131,7 @@ target_link_libraries(my_app PRIVATE rapidobj::rapidobj)
 
 # API
 
-The API of the rapidobj library is rather simple. It consists of just two free-standing functions: ```ParseFile()``` and ```Triangulate()```. 
+The API of the RapidObj library is rather simple. It consists of just two free-standing functions: ```ParseFile()``` and ```Triangulate()```. 
 
 Function ```ParseFile()``` loads an .obj file, parses it and returns a result object. The result object contains vertex attribute arrays, shapes, and materials. A shape object contains a collection of polygons (i.e. a mesh) or a collection of polylines.
 
@@ -171,7 +173,7 @@ int main()
 }
 ```
 
-# Rapidobj Result
+# RapidObj Result
 
 Let's take a closer look at the ```Result``` object returned by the ```ParseFile()``` function. Its structure corresponds closely to the format of an .obj file. 
 ![rapidobj::Result](data/images/result.svg)
@@ -215,7 +217,7 @@ There are a few things to note:
 * The smoothing group IDs for both faces are set to 0 in the mesh ```smoothing_group_ids``` array. Value of 0 indicates that the face does not belong to any smoothing group.
 
 # Next Steps
-Typically, parsed .obj data cannot be used as is. For instance, for hardware rendering, a number of additional processing steps are required so that the data is in a format easily consumed by a GPU. Rapidobj provides one convenience function, ```Triangulate()```, to assist with this task. Other tasks must be implemented by the rendering application. These may include:
+Typically, parsed .obj data cannot be used as is. For instance, for hardware rendering, a number of additional processing steps are required so that the data is in a format easily consumed by a GPU. RapidObj provides one convenience function, ```Triangulate()```, to assist with this task. Other tasks must be implemented by the rendering application. These may include:
 * Gathering all the attributes so that the vertex data is in a single array of interleaved attributes. This step may optionally include vertex deduplication.
 * Generate normals, in case they are not provided in the .obj file. This step may use smoothing groups (if any) to create higher quality normals.
 * Optionally optimise the meshes for rendering based on some criteria such as: material type, mesh size, number of batches to be submitted, etc.
@@ -245,8 +247,8 @@ This is a (hopefully complete) list of third-party tools and resources used by t
 
 # License
 
-The Rapidobj single-header library is licensed under the MIT License.
+The RapidObj single-header library is licensed under the MIT License.
 
-The Rapidobj single-header library contains a copy of [fast_float](https://github.com/fastfloat/fast_float) number parsing library from Daniel Lamire which is licensed under the MIT License as well as under the Apache 2.0 License.
+The RapidObj single-header library contains a copy of [fast_float](https://github.com/fastfloat/fast_float) number parsing library from Daniel Lamire which is licensed under the MIT License as well as under the Apache 2.0 License.
 
-The Rapidobj single-header library contains a copy of [earcut.hpp](https://github.com/mapbox/earcut.hpp) polygon triangulation library from Mapbox which is licensed under the ISC License.
+The RapidObj single-header library contains a copy of [earcut.hpp](https://github.com/mapbox/earcut.hpp) polygon triangulation library from Mapbox which is licensed under the ISC License.
