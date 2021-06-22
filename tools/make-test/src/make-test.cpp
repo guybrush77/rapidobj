@@ -1,4 +1,31 @@
-#define TINYOBJLOADER_IMPLEMENTATION
+#ifdef _MSC_VER
+
+// clang-format off
+
+#define BEGIN_DISABLE_WARNINGS \
+    __pragma(warning(push)) \
+    __pragma(warning(disable:4244)) \
+    __pragma(warning(disable:4701)) \
+
+#define END_DISABLE_WARNINGS __pragma(warning(pop))
+
+#elif defined(__clang__)
+
+#define BEGIN_DISABLE_WARNINGS
+
+#define END_DISABLE_WARNINGS
+
+#elif defined(__GNUC__)
+
+#define BEGIN_DISABLE_WARNINGS \
+    _Pragma("GCC diagnostic push") \
+    _Pragma("GCC diagnostic ignored \"-Wconversion\"")
+
+// clang-format on
+
+#define END_DISABLE_WARNINGS _Pragma("GCC diagnostic pop")
+
+#endif
 
 #include <filesystem>
 #include <fstream>
@@ -7,8 +34,15 @@
 #include <sstream>
 #include <stdexcept>
 
+BEGIN_DISABLE_WARNINGS
+
 #include "cxxopts.hpp"
+
+END_DISABLE_WARNINGS
+
 #include "serializer/serializer.hpp"
+
+#define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
 std::ostream& operator<<(std::ostream& os, const rapidobj::Index& index)

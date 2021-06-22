@@ -6,12 +6,13 @@ set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
 include(RapidObjGetVersion)
-include(GNUInstallDirs)
-include(CMakePackageConfigHelpers)
 
 rapidobj_get_version(VERSION)
 
 project(RapidObj VERSION ${VERSION} LANGUAGES CXX)
+
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
 option(RAPIDOBJ_BuildTests "Build Tests." OFF)
 option(RAPIDOBJ_BuildTools "Build Tools." OFF)

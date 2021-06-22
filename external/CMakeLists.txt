@@ -54,6 +54,24 @@ FetchContent_MakeAvailable(doctest)
 
 
 #------------------------------------------------------------------------------------
+# Fetch OBJ-Loader
+#------------------------------------------------------------------------------------
+
+FetchContent_Declare(
+    objloader
+    GIT_REPOSITORY  https://github.com/Bly7/OBJ-Loader.git
+    GIT_TAG         origin/master
+    GIT_SHALLOW     TRUE
+)
+
+FetchContent_MakeAvailable(objloader)
+
+add_library(objloader INTERFACE)
+
+target_include_directories(objloader INTERFACE "${objloader_SOURCE_DIR}/Source")
+
+
+#------------------------------------------------------------------------------------
 # Fetch tinyobjloader
 #------------------------------------------------------------------------------------
 
