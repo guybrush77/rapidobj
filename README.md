@@ -2,11 +2,11 @@
 
 # Introduction
 
-Rapidobj is a single header C++17 library that loads and parses [Wavefront .obj files](https://en.wikipedia.org/wiki/Wavefront_.obj_file).
+Rapidobj is an easy-to-use, single-header C++17 library that loads and parses [Wavefront .obj files](https://en.wikipedia.org/wiki/Wavefront_.obj_file).
 
-The .obj file format was first used by Wavefront Technologies around 1990. However, this 3D geometry file format did not age well. An .obj file is a text file and, consequently, large models take a lot of of disk space and are slow to load and parse. Moreover, after loading and parsing .obj files, additional processing steps are required to transform the data into a format suitable for hardware rendering.
+The .obj file format was first used by Wavefront Technologies around 1990. However, this 3D geometry file format did not age well. An .obj file is a text file and, consequently, large models take a lot of of disk space and are slow to load and parse. Moreover, after loading and parsing .obj files, additional processing steps are required to transform the data into a format suitable for hardware (i.e. GPU) rendering. Nevertheless, .obj files are common enough in the wild that it becomes useful to have an easy way to parse them.
 
-Rapidobj library, as implied by its name, is designed to quickly load and parse large .obj files. It is optimised to take advantage of modern computer hardware and is well suited for processing large .obj files on computers with multi-core CPUs and fast solid-state disk drives. The user-facing interface is heavily influenced by another single header C++ library, [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader).
+Rapidobj's API was influenced by another single header C++ library, [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader). From user's point of view, the two libraries should look fairly similar. That said, tinyobjloader has been around for some time; it is a mature and well tested library. So, why use Rapidobj library? The short answer is, it's fast! Its main design goal was to take full advantage of modern computer hardware. See the [Benchmarks](docs/BENCHMARKS.md) page.
 
 # Integration
 
