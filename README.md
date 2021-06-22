@@ -4,9 +4,9 @@
 
 Rapidobj is an easy-to-use, single-header C++17 library that loads and parses [Wavefront .obj files](https://en.wikipedia.org/wiki/Wavefront_.obj_file).
 
-The .obj file format was first used by Wavefront Technologies around 1990. However, this 3D geometry file format did not age well. An .obj file is a text file and, consequently, large models take a lot of of disk space and are slow to load and parse. Moreover, after loading and parsing .obj files, additional processing steps are required to transform the data into a format suitable for hardware (i.e. GPU) rendering. Nevertheless, .obj files are common enough in the wild that it becomes useful to have an easy way to parse them.
+The .obj file format was first used by Wavefront Technologies around 1990. However, this 3D geometry file format did not age well. An .obj file is a text file and, consequently, large models take a lot of of disk space and are slow to load and parse. Moreover, after loading and parsing .obj files, additional processing steps are required to transform the data into a format suitable for hardware (i.e. GPU) rendering. Nevertheless, .obj files are common enough in the wild that it's useful to have an easy way to parse them.
 
-Rapidobj's API was influenced by another single header C++ library, [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader). From user's point of view, the two libraries should look fairly similar. That said, tinyobjloader has been around for some time; it is a mature and well tested library. So, why use Rapidobj library? The short answer is, it's fast! Its main design goal was to take full advantage of modern computer hardware. See the [Benchmarks](docs/BENCHMARKS.md) page.
+Rapidobj's API was influenced by another single header C++ library, [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader). From user's point of view, the two libraries should look fairly similar. That said, tinyobjloader has been around for some time; it is a mature and well tested library. So, why use Rapidobj library? The short answer is, it's fast - and especially so when parsing large files! It was designed to take full advantage of modern computer hardware. See the [Benchmarks](docs/BENCHMARKS.md) page.
 
 # Integration
 
@@ -19,11 +19,11 @@ You will need a C++ compiler that fully supports C++17 standard. In practice, th
 
 If you intend to use CMake as your build system, you will need to install CMake version 3.14 or higher.
 
-If building on Linux, make sure that the _libaio_ library and its header files are installed on your system. On Debian, type:
+If building on Linux, make sure to install _libaio_ library and its header files first. On Debian:
 ```
 $ sudo apt install libaio-dev
 ```
-On RHEL or Fedora, type:
+On RHEL or Fedora:
 ```
 $ sudo yum install libaio-devel
 ```
@@ -56,7 +56,7 @@ The next step is to actually install the RapidObj package:
 $ cd build
 $ sudo make install
 ```
-The install command will copy the files to well defined system directories. Note that this command will likely requires administrative access.
+The install command will copy the files to well defined system directories. Note that this command will likely require administrative access.
 
 The only remaining step is to find the RapidObj package from inside your own CMakeLists.txt file and link against it. For example:
 ```cmake
@@ -77,9 +77,9 @@ The install step is almost the same as before:
 $ cd build
 $ make install
 ```
-The only difference is that administrative access (i.e. sudo) is no longer required since all the files will be copied to the user home folder, as opposed to system folders.
+The only difference is that administrative access (i.e. sudo) is no longer required since the destination is user's home folders, as opposed to system folders.
 
-Because the files have been installed to a custom location that CMake does not know about, CMake cannot find the RapidObj package automatically. We can fix this by providing a hint about the cmake files whereabouts:
+Because the files have been installed to a custom location that CMake does not know about, CMake cannot find the RapidObj package automatically. We can fix this by providing a hint about the cmake directory whereabouts:
 
 ```cmake
 add_executable(my_app my_src.cpp)
@@ -88,7 +88,7 @@ find_package(RapidObj REQUIRED HINTS $ENV{HOME}/local/cmake)
 
 target_link_libraries(my_app PRIVATE rapidobj::rapidobj)
 ```
-Once the package has been successfully installed, RapidObj folder can be deleted.
+Once the package has been successfully installed, RapidObj directory can be deleted.
 
 #### Embedded
 
@@ -202,8 +202,31 @@ There are a few things to note:
 * The material IDs for both faces are set to -1 in the mesh ```material_ids``` array. Value of -1 means that no material is assigned to the face.
 * The smoothing group IDs for both faces are set to 0 in the mesh ```smoothing_group_ids``` array. Value of 0 indicates that the face does not belong to any smoothing group.
 
-# Using Rapidobj Result
+# Next Steps
 Typically, parsed .obj data cannot be used as is. For instance, for hardware rendering, a number of additional processing steps are required so that the data is in a format easily consumed by a GPU. Rapidobj provides one convenience function, ```Triangulate()```, to assist with this task. Other tasks must be implemented by the rendering application. These may include:
 * Gathering all the attributes so that the vertex data is in a single array of interleaved attributes. This step may optionally include vertex deduplication.
 * Generate normals, in case they are not provided in the .obj file. This step may use smoothing groups (if any) to create higher quality normals.
 * Optionally optimise the meshes for rendering based on some criteria such as: material type, mesh size, number of batches to be submitted, etc.
+
+# Third-party Tools and Resources
+
+This is a (hopefully complete) list of third-party tools and resources used by this project:
+
+* [3D models](https://casual-effects.com/data/) from McGuire Computer Graphics Archive
+* [cereal](https://uscilab.github.io/cereal/) for serialization
+* [CMake](https://cmake.org/) for build automation
+* [cxxopts](https://github.com/jarro2783/cxxopts) for command line option parsing
+* [doctest](https://github.com/onqtam/doctest) for testing
+* [earcut.hpp](https://github.com/mapbox/earcut.hpp) for polygon triangulation
+* [fast_float](https://github.com/fastfloat/fast_float) for string to float parsing
+* [OBJ-Loader](https://github.com/Bly7/OBJ-Loader) for .obj file parsing
+* [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader) for .obj file parsing
+* [xxHash](https://github.com/Cyan4973/xxHash) for hashing
+
+# License
+
+The Rapidobj single-header library is licensed under the MIT License.
+
+The Rapidobj single-header library contains a copy of [fast_float](https://github.com/fastfloat/fast_float) number parsing library from Daniel Lamire which is licensed under the MIT License as well as under the Apache 2.0 License.
+
+The Rapidobj single-header library contains a copy of [earcut.hpp](https://github.com/mapbox/earcut.hpp) polygon triangulation library from Mapbox which is licensed under the ISC License.
