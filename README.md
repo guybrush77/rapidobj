@@ -1,5 +1,17 @@
 [![Build Status](https://travis-ci.com/guybrush77/rapidobj.svg?branch=master)](https://travis-ci.com/guybrush77/rapidobj)
 
+- [Introduction](#introduction)
+- [Integration](#integration)
+  - [Prerequisites](#prerequisites)
+  - [Manual Integration](#manual-integration)
+  - [CMake Integration](#cmake-integration)
+- [API](#api)
+- [Rapidobj Result](#rapidobj-result)
+- [Next Steps](#next-steps)
+- [OS Support](#os-Support)
+- [Third-party Tools and Resources](#third-party-tools-and-resources)
+- [License](#license)
+
 # Introduction
 
 Rapidobj is an easy-to-use, single-header C++17 library that loads and parses [Wavefront .obj files](https://en.wikipedia.org/wiki/Wavefront_.obj_file).
@@ -115,7 +127,7 @@ FetchContent_MakeAvailable(rapidobj)
 target_link_libraries(my_app PRIVATE rapidobj::rapidobj)
 ```
 
-# Using Rapidobj API
+# API
 
 The API of the rapidobj library is rather simple. It consists of just two free-standing functions: ```ParseFile()``` and ```Triangulate()```. 
 
@@ -159,7 +171,7 @@ int main()
 }
 ```
 
-# Understanding Rapidobj Result
+# Rapidobj Result
 
 Let's take a closer look at the ```Result``` object returned by the ```ParseFile()``` function. Its structure corresponds closely to the format of an .obj file. 
 ![rapidobj::Result](data/images/result.svg)
@@ -208,6 +220,13 @@ Typically, parsed .obj data cannot be used as is. For instance, for hardware ren
 * Generate normals, in case they are not provided in the .obj file. This step may use smoothing groups (if any) to create higher quality normals.
 * Optionally optimise the meshes for rendering based on some criteria such as: material type, mesh size, number of batches to be submitted, etc.
 
+# OS Support
+
+* Linux
+* Windows
+
+macOS is TBD.
+
 # Third-party Tools and Resources
 
 This is a (hopefully complete) list of third-party tools and resources used by this project:
@@ -221,6 +240,7 @@ This is a (hopefully complete) list of third-party tools and resources used by t
 * [fast_float](https://github.com/fastfloat/fast_float) for string to float parsing
 * [OBJ-Loader](https://github.com/Bly7/OBJ-Loader) for .obj file parsing
 * [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader) for .obj file parsing
+* [Travis CI](https://travis-ci.org/) for continuous integration
 * [xxHash](https://github.com/Cyan4973/xxHash) for hashing
 
 # License
