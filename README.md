@@ -55,7 +55,7 @@ There are some extra considerations when building a Linux project: you need to l
 ```
 $ g++ -std=c++17 my_src.cpp -pthread -laio -o my_app
 ```
-> :warning: If you are using gcc version 8, you might also have to link against the _stdc++fs_ library (because _std::filesystem_ used by RapidObj is not part of _libstdc++_ for gcc versions less than 9).
+> :page_facing_up: If you are using gcc version 8, you also have to link against the _stdc++fs_ library (_std::filesystem_ used by RapidObj is not part of _libstdc++_ until gcc version 9).
 
 ### CMake Integration
 
@@ -80,11 +80,17 @@ find_package(RapidObj REQUIRED)
 
 target_link_libraries(my_app PRIVATE rapidobj::rapidobj)
 ```
-In some cases, it may be desirable to install RapidObj to a custom location. For instance, to install RapidObj in a subfolder of your home directory, cmake configuration and generation steps might look as follows:
+
+RapidObj cmake script places the header file in a ```rapidobj``` subfolder of the include directory. Consequently, the include directive in your code should look like this:
+
+```cpp
+#include "rapidobj/rapidobj.hpp"
+```
+
+What if you don't want to install RapidObj in a system directory? RapidObj allows you to specify custom install folders. CMake cache variable RAPIDOBJ_INCLUDE_DIR is used to set header file install location; RAPIDOBJ_CMAKE_DIR is used to set cmake files install location. For example, to install RapidObj in a folder ```local``` inside your home directory, the cmake configuration and generation steps are as follows:
 ```
 $ cmake -B build -DRAPIDOBJ_INCLUDE_DIR=${HOME}/local/include -DRAPIDOBJ_CMAKE_DIR=${HOME}/local/cmake .
 ```
-CMake cache variable RAPIDOBJ_INCLUDE_DIR is used to specify the header file install location. Similarly, RAPIDOBJ_CMAKE_DIR is used to specify cmake files install location.
 
 The install step is almost the same as before:
 ```
