@@ -4,8 +4,8 @@
 
 #define BEGIN_DISABLE_WARNINGS \
     __pragma(warning(push)) \
-    __pragma(warning(disable:4244)) \
-    __pragma(warning(disable:4701)) \
+    __pragma(warning(disable:4244)) /* conversion from 'T1' to 'T2', possible loss of data */ \
+    __pragma(warning(disable:4701)) /* potentially uninitialized local variable used */
 
 #define END_DISABLE_WARNINGS __pragma(warning(pop))
 

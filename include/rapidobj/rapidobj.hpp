@@ -4,7 +4,7 @@ rapidobj - Fast Wavefront .obj file loader
 
 Licensed under the MIT License <http://opensource.org/licenses/MIT>
 SPDX-License-Identifier: MIT
-Copyright (c) 2001 Slobodan Pavlic
+Copyright (c) 2021 Slobodan Pavlic
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -4808,10 +4808,11 @@ inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
     }
 
     // coalesce per-chunk material-record lists into a material-offsets list and a material-ids list
-    auto   material_offsets = std::vector<size_t>();
-    auto   material_ids     = std::vector<int>();
-    auto&& result           = context->material.parse_result.valid() ? context->material.parse_result.get()
-                                                                     : ParseMaterialFileResult{};
+    auto material_offsets = std::vector<size_t>();
+    auto material_ids     = std::vector<int>();
+
+    const auto& result = context->material.parse_result.valid() ? context->material.parse_result.get()
+                                                                : ParseMaterialFileResult{};
     {
         if (result.error.code) {
             return Result{ Attributes{}, Shapes{}, Materials{}, result.error.code };

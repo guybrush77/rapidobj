@@ -2,8 +2,8 @@
 
 #define BEGIN_DISABLE_WARNINGS \
     __pragma(warning(push)) \
-    __pragma(warning(disable : 4244)) \
-    __pragma(warning(disable : 4701))
+    __pragma(warning(disable : 4244)) /* conversion from 'T1' to 'T2', possible loss of data */ \
+    __pragma(warning(disable : 4701)) /* potentially uninitialized local variable used */
 
 #define END_DISABLE_WARNINGS __pragma(warning(pop))
 
@@ -23,7 +23,8 @@
     _Pragma("GCC diagnostic ignored \"-Wconversion\"") \
     _Pragma("GCC diagnostic ignored \"-Wsign-compare\"") \
     _Pragma("GCC diagnostic ignored \"-Wfloat-conversion\"") \
-    _Pragma("GCC diagnostic ignored \"-Wunused-value\"")
+    _Pragma("GCC diagnostic ignored \"-Wunused-value\"") \
+    _Pragma("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
 
 // clang-format on
 
