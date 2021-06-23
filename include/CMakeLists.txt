@@ -22,12 +22,22 @@ write_basic_package_version_file(RapidObjConfigVersion.cmake VERSION ${VERSION} 
 set(DESTINATION_CMAKE_DIR "${RAPIDOBJ_CMAKE_DIR}/RapidObj")
 set(DESTINATION_INCLUDE_DIR "${RAPIDOBJ_INCLUDE_DIR}/rapidobj")
 
+if(MSVC)
+    target_sources(rapidobj INTERFACE
+        $<INSTALL_INTERFACE:${DESTINATION_CMAKE_DIR}/rapidobj.natvis>
+        $<BUILD_INTERFACE:${RapidObj_SOURCE_DIR}/rapidobj.natvis>
+    )
+endif()
+
 install(TARGETS rapidobj EXPORT RapidObj)
 install(EXPORT RapidObj DESTINATION ${DESTINATION_CMAKE_DIR} NAMESPACE rapidobj::)
 install(FILES ${PROJECT_SOURCE_DIR}/cmake/RapidObjConfig.cmake DESTINATION ${DESTINATION_CMAKE_DIR})
 install(FILES ${PROJECT_BINARY_DIR}/include/RapidObjConfigVersion.cmake DESTINATION ${DESTINATION_CMAKE_DIR})
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     install(FILES ${PROJECT_SOURCE_DIR}/cmake/FindAio.cmake DESTINATION ${DESTINATION_CMAKE_DIR})
+endif()
+if(MSVC)
+    install(FILES ${PROJECT_SOURCE_DIR}/rapidobj.natvis DESTINATION ${DESTINATION_CMAKE_DIR})
 endif()
 
 install(FILES rapidobj/rapidobj.hpp DESTINATION ${DESTINATION_INCLUDE_DIR})
