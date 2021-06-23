@@ -152,16 +152,16 @@ Suppose we want to find out the total number of triangles in an .obj file. This 
 
 int main()
 {
-    auto result = rapidobj::ParseFile("/home/user/obj-models/my-model.obj");
+    auto result = rapidobj::ParseFile("/path/to/my.obj");
 
     if (result.error) {
         std::cout << result.error.code.message() << '\n';
         return EXIT_FAILURE;
     }
 
-    rapidobj::Triangulate(result);
+    bool success = rapidobj::Triangulate(result);
 
-    if (result.error) {
+    if (!success) {
         std::cout << result.error.code.message() << '\n';
         return EXIT_FAILURE;
     }
@@ -173,6 +173,7 @@ int main()
     }
 
     std::cout << "Shapes:    " << result.shapes.size() << '\n';
+    std::cout << "Materials: " << result.materials.size() << '\n';
     std::cout << "Triangles: " << num_triangles << '\n';
 
     return EXIT_SUCCESS;
