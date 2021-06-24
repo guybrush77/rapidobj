@@ -1,3 +1,29 @@
+// clang-format off
+
+#if defined(__clang__)
+
+#define BEGIN_DISABLE_WARNINGS \
+    _Pragma("clang diagnostic push") \
+    _Pragma("clang diagnostic ignored \"-Wlanguage-extension-token\"") \
+
+#define END_DISABLE_WARNINGS _Pragma("clang diagnostic pop")
+
+#elif _MSC_VER
+
+#define BEGIN_DISABLE_WARNINGS
+
+#define END_DISABLE_WARNINGS
+
+#elif defined(__GNUC__)
+
+#define BEGIN_DISABLE_WARNINGS
+
+#define END_DISABLE_WARNINGS
+
+#endif
+
+// clang-format on
+
 #include "serializer/serializer.hpp"
 
 #include "cereal/archives/portable_binary.hpp"
@@ -5,9 +31,13 @@
 #include "cereal/types/string.hpp"
 #include "cereal/types/vector.hpp"
 
+BEGIN_DISABLE_WARNINGS
+
 #define XXH_STATIC_LINKING_ONLY
 #define XXH_IMPLEMENTATION
 #include "xxhash.h"
+
+END_DISABLE_WARNINGS
 
 static std::string ToBase16(XXH128_hash_t hash)
 {

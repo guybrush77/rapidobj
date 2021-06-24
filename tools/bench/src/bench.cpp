@@ -1,4 +1,18 @@
-#ifdef _MSC_VER
+// clang-format off
+
+#if defined(__clang__)
+
+#define BEGIN_DISABLE_WARNINGS \
+    _Pragma("clang diagnostic push") \
+    _Pragma("clang diagnostic ignored \"-Wsign-conversion\"") \
+    _Pragma("clang diagnostic ignored \"-Wconversion\"") \
+    _Pragma("clang diagnostic ignored \"-Wsign-compare\"") \
+    _Pragma("clang diagnostic ignored \"-Wfloat-conversion\"") \
+    _Pragma("clang diagnostic ignored \"-Wunused-value\"")
+
+#define END_DISABLE_WARNINGS _Pragma("clang diagnostic pop")
+
+#elif _MSC_VER
 
 #define BEGIN_DISABLE_WARNINGS \
     __pragma(warning(push)) \
@@ -7,15 +21,7 @@
 
 #define END_DISABLE_WARNINGS __pragma(warning(pop))
 
-#elif defined(__clang__)
-
-#define BEGIN_DISABLE_WARNINGS
-
-#define END_DISABLE_WARNINGS
-
 #elif defined(__GNUC__)
-
-// clang-format off
 
 #define BEGIN_DISABLE_WARNINGS \
     _Pragma("GCC diagnostic push") \
@@ -26,11 +32,11 @@
     _Pragma("GCC diagnostic ignored \"-Wunused-value\"") \
     _Pragma("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
 
-// clang-format on
-
 #define END_DISABLE_WARNINGS _Pragma("GCC diagnostic pop")
 
 #endif
+
+// clang-format on
 
 BEGIN_DISABLE_WARNINGS
 

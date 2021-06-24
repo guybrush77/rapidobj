@@ -7,62 +7,27 @@
   },
   "configurePresets": [
     {
-      "name": "x64-windows-debug",
-      "description": "x64 Windows Debug",
+      "name": "default-config",
+      "hidden": true,
+      "cacheVariables": {
+        "RAPIDOBJ_BuildExamples": true,
+        "RAPIDOBJ_BuildTests": true,
+        "RAPIDOBJ_BuildTools": true
+      },
+      "generator": "Ninja"
+    },
+    {
+      "name": "arch-x64",
+      "hidden": true,
       "architecture": {
         "value": "x64",
         "strategy": "external"
-      },
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/${presetName}",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_C_COMPILER": "cl",
-        "CMAKE_CXX_COMPILER": "cl",
-        "CMAKE_CXX_FLAGS": "/EHsc /W4 /permissive-"
-      },
-      "vendor": {
-        "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "hostOS": [ "Windows" ]
-        }
       }
     },
     {
-      "name": "x64-windows-release",
-      "description": "x64 Windows Release",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
-      },
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/${presetName}",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_C_COMPILER": "cl",
-        "CMAKE_CXX_COMPILER": "cl",
-        "CMAKE_CXX_FLAGS": "/EHsc /W4 /permissive-"
-      },
-      "vendor": {
-        "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "hostOS": [ "Windows" ]
-        }
-      }
-    },
-    {
-      "name": "x64-linux-debug",
-      "description": "x64 Linux Debug",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
-      },
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/${presetName}",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_C_COMPILER": "gcc",
-        "CMAKE_CXX_COMPILER": "g++",
-        "CMAKE_CXX_FLAGS": "-Werror -Wall -Wextra -Wconversion -Wsign-conversion -pedantic-errors"
-      },
+      "name": "os-linux",
+      "hidden": true,
+      "inherits": "default-config",
       "vendor": {
         "microsoft.com/VisualStudioSettings/CMake/1.0": {
           "hostOS": [ "Linux" ]
@@ -70,24 +35,112 @@
       }
     },
     {
-      "name": "x64-linux-release",
-      "description": "x64 Linux Release",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
-      },
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/${presetName}",
+      "name": "os-windows",
+      "hidden": true,
+      "inherits": "default-config",
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Windows" ]
+        }
+      }
+    },
+    {
+      "name": "compiler-clang",
+      "hidden": true,
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_FLAGS": "-Werror -Wall -Wextra -Wconversion -Wsign-conversion -pedantic-errors"
+      }
+    },
+    {
+      "name": "compiler-gcc",
+      "hidden": true,
+      "cacheVariables": {
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
         "CMAKE_CXX_FLAGS": "-Werror -Wall -Wextra -Wconversion -Wsign-conversion -pedantic-errors"
-      },
-      "vendor": {
-        "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "hostOS": [ "Linux" ]
-        }
+      }
+    },
+    {
+      "name": "compiler-msvc",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl",
+        "CMAKE_CXX_FLAGS": "/EHsc /W4 /permissive-"
+      }
+    },
+    {
+      "name": "x64-linux-clang-release",
+      "description": "x64 Linux Clang Release",
+      "inherits": [ "arch-x64", "os-linux", "compiler-clang" ],
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "x64-linux-clang-debug",
+      "description": "x64 Linux Clang Debug",
+      "inherits": [ "arch-x64", "os-linux", "compiler-clang" ],
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "x64-linux-gcc-release",
+      "description": "x64 Linux GCC Release",
+      "inherits": [ "arch-x64", "os-linux", "compiler-gcc" ],
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "x64-linux-gcc-debug",
+      "description": "x64 Linux GCC Debug",
+      "inherits": [ "arch-x64", "os-linux", "compiler-gcc" ],
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "x64-windows-msvc-release",
+      "description": "x64 Windows MSVC Release",
+      "inherits": [ "arch-x64", "os-windows", "compiler-msvc" ],
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "x64-windows-msvc-debug",
+      "description": "x64 Windows MSVC Debug",
+      "inherits": [ "arch-x64", "os-windows", "compiler-msvc" ],
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "x64-windows-clang-release",
+      "description": "x64 Windows Clang Release",
+      "inherits": [ "arch-x64", "os-windows", "compiler-clang" ],
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "x64-windows-clang-debug",
+      "description": "x64 Windows Clang Debug",
+      "inherits": [ "arch-x64", "os-windows", "compiler-clang" ],
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
       }
     }
   ]

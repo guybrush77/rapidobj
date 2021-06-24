@@ -27,6 +27,9 @@ matrix:
           packages: ["g++-10", "libaio-dev"]
       env: COMPILER=g++-10
 
+    - os: linux
+      env: COMPILER=clang++
+
 install:
   - pushd ${HOME}
   - mkdir deps

@@ -3873,13 +3873,13 @@ class File final {
             nullptr);
 
         if (m_state.handle == INVALID_HANDLE_VALUE) {
-            m_state.error = std::error_code(GetLastError(), std::system_category());
+            m_state.error = std::error_code(static_cast<int>(GetLastError()), std::system_category());
             return;
         }
 
         auto size = LARGE_INTEGER{};
         if (!GetFileSizeEx(m_state.handle, &size)) {
-            m_state.error = std::error_code(GetLastError(), std::system_category());
+            m_state.error = std::error_code(static_cast<int>(GetLastError()), std::system_category());
             Destroy();
             return;
         }
@@ -3929,7 +3929,7 @@ class AsyncReader final {
         m_state.handle = CreateEventA(nullptr, FALSE, FALSE, nullptr);
 
         if (m_state.handle == INVALID_HANDLE_VALUE) {
-            m_state.error = std::error_code(GetLastError(), std::system_category());
+            m_state.error = std::error_code(static_cast<int>(GetLastError()), std::system_category());
         }
 
         m_state.file = file.handle();
@@ -3957,7 +3957,7 @@ class AsyncReader final {
 
         auto success = ReadFile(m_state.file, buffer, static_cast<DWORD>(size), nullptr, &m_state.overlapped);
 
-        auto error = success ? ERROR_SUCCESS : GetLastError();
+        auto error = success ? ERROR_SUCCESS : static_cast<int>(GetLastError());
 
         if (error == ERROR_SUCCESS || error == ERROR_IO_PENDING) {
             return std::error_code();
@@ -3977,7 +3977,7 @@ class AsyncReader final {
             return std::make_pair(static_cast<std::size_t>(bytes_read), std::error_code());
         }
 
-        auto error = GetLastError();
+        auto error = static_cast<int>(GetLastError());
 
         if (error == ERROR_HANDLE_EOF) {
             return std::make_pair(static_cast<std::size_t>(bytes_read), std::error_code());
@@ -4815,7 +4815,7 @@ inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
                                                                 : ParseMaterialFileResult{};
     {
         if (result.error.code) {
-            return Result{ Attributes{}, Shapes{}, Materials{}, result.error.code };
+            return Result{ Attributes{}, Shapes{}, Materials{}, { result.error.code } };
         }
 
         material_offsets.reserve(material_offsets_size + 2);
