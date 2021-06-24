@@ -28,7 +28,11 @@ matrix:
       env: COMPILER=g++-10
 
     - os: linux
-      env: COMPILER=clang++
+      addons:
+        apt:
+          sources: llvm-toolchain-8
+          packages: ["clang-8", "libaio-dev"]
+      env: COMPILER=clang-8
 
 install:
   - pushd ${HOME}
