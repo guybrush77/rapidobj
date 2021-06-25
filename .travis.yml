@@ -36,7 +36,9 @@ matrix:
     - os: linux
       addons:
         apt:
-          sources: llvm-toolchain-8
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-8
           packages: ["g++-9", "clang-8", "libaio-dev"]
       env:
         - CXX_COMPILER=clang++-8
