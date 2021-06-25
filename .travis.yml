@@ -36,13 +36,29 @@ matrix:
     - os: linux
       addons:
         apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-8
+          sources: ubuntu-toolchain-r-test
           packages: ["g++-9", "clang-8", "libaio-dev"]
       env:
         - CXX_COMPILER=clang++-8
         - C_COMPILER=clang-8
+
+    - os: linux
+      addons:
+        apt:
+          sources: ubuntu-toolchain-r-test
+          packages: ["g++-9", "clang-9", "libaio-dev"]
+      env:
+        - CXX_COMPILER=clang++-9
+        - C_COMPILER=clang-9
+
+    - os: linux
+      addons:
+        apt:
+          sources: ubuntu-toolchain-r-test
+          packages: ["g++-9", "clang-10", "libaio-dev"]
+      env:
+        - CXX_COMPILER=clang++-10
+        - C_COMPILER=clang-10
 
 install:
   - pushd ${HOME}
