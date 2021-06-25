@@ -11,28 +11,36 @@ matrix:
         apt:
           sources: ubuntu-toolchain-r-test
           packages: ["g++-8", "libaio-dev"]
-      env: COMPILER=g++-8
+      env:
+        - CXX_COMPILER=g++-8
+        - C_COMPILER=gcc-8
 
     - os: linux
       addons:
         apt:
           sources: ubuntu-toolchain-r-test
           packages: ["g++-9", "libaio-dev"]
-      env: COMPILER=g++-9
+      env:
+        - CXX_COMPILER=g++-9
+        - C_COMPILER=gcc-9
 
     - os: linux
       addons:
         apt:
           sources: ubuntu-toolchain-r-test
           packages: ["g++-10", "libaio-dev"]
-      env: COMPILER=g++-10
+      env:
+        - CXX_COMPILER=g++-10
+        - C_COMPILER=gcc-10
 
     - os: linux
       addons:
         apt:
           sources: llvm-toolchain-8
-          packages: ["libstdc++-8-dev", "clang-8", "libaio-dev"]
-      env: COMPILER=clang-8
+          packages: ["g++-9", "clang-8", "libaio-dev"]
+      env:
+        - CXX_COMPILER=clang++-8
+        - C_COMPILER=clang-8
 
 install:
   - pushd ${HOME}
@@ -48,7 +56,8 @@ install:
 
 script: >
     cmake -B ${HOME}/build
-    -DCMAKE_CXX_COMPILER=$COMPILER
+    -DCMAKE_CXX_COMPILER=CXX_COMPILER
+    -DCMAKE_C_COMPILER=C_COMPILER
     -DCMAKE_BUILD_TYPE=Release
     -DRAPIDOBJ_BuildTools=ON
     -DRAPIDOBJ_BuildTests=ON
