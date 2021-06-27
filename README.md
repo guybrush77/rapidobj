@@ -11,16 +11,16 @@
 - [RapidObj Result](#rapidobj-result)
 - [Next Steps](#next-steps)
 - [OS Support](#os-support)
-- [Third-party Tools and Resources](#third-party-tools-and-resources)
+- [Third Party Tools and Resources](#third-party-tools-and-resources)
 - [License](#license)
 
 # About
 
 RapidObj is an easy-to-use, single-header C++17 library that loads and parses [Wavefront .obj files](https://en.wikipedia.org/wiki/Wavefront_.obj_file).
 
-The .obj file format was first used by Wavefront Technologies around 1990. However, this 3D geometry file format did not age well. An .obj file is a text file and, consequently, large models take a lot of of disk space and are slow to load and parse. Moreover, after loading and parsing .obj files, additional processing steps are required to transform the data into a format suitable for hardware (i.e. GPU) rendering. Nevertheless, .obj files are common enough in the wild that it's useful to have a convenient way to parse them.
+The .obj file format was first used by Wavefront Technologies around 1990. However, this 3D geometry file format did not age well. An .obj file is a text file and, consequently, large models take a lot of of disk space and are slow to load and parse. Moreover, after loading and parsing, additional processing steps are required to transform the data into a format suitable for hardware (i.e. GPU) rendering. Nevertheless, .obj files are common enough in the wild that it's useful to have an efficient way to parse them.
 
-RapidObj's API was influenced by another single header C++ library, [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader). From user's point of view, the two libraries should look fairly similar. That said, tinyobjloader has been around for some time; it is a mature and well tested library. So, why use RapidObj library? The short answer is, it's fast - and especially so when parsing large files! It was designed to take full advantage of modern computer hardware. See the [Benchmarks](docs/BENCHMARKS.md) page.
+RapidObj's API was influenced by another single header C++ library, [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader). From users' point of view, the two libraries look fairly similar. That said, tinyobjloader has been around for some time; it is a mature and well tested library. So, why use RapidObj library? It is fast, and especially so when parsing large files. It was designed to take full advantage of modern computer hardware. See [Benchmarks](docs/BENCHMARKS.md) page.
 
 # Integration
 
@@ -33,7 +33,7 @@ You will need a C++ compiler that fully supports C++17 standard. In practice, th
 
 If you intend to use CMake as your build system, you will need to install CMake version 3.14 or higher.
 
-If building on Linux, make sure to install _libaio_ library and its header files first. On Debian:
+If building on Linux, make sure to first install _libaio_ library and its header files. On Debian:
 ```
 $ sudo apt install libaio-dev
 ```
@@ -49,7 +49,7 @@ The simplest way to integrate the library in your project is to copy the header 
 ```cpp
 #include "rapidobj.hpp"
 ```
-To compile your project, make sure to use the C++17 switch when compiling (```-std=c++17``` for g++ and clang, ```/std:c++17``` for MSVC).
+To compile your project, make sure to use the C++17 switch (```-std=c++17``` for g++ and clang, ```/std:c++17``` for MSVC).
 
 There are some extra considerations when building a Linux project: you need to link your application against _libpthread_ and _libaio_ libraries. For example, assuming g++ compiler:
 ```
@@ -97,7 +97,7 @@ The install step is almost the same as before:
 $ cd build
 $ make install
 ```
-The only difference is that administrative access (i.e. sudo) is no longer required since the destination is user's home folders, as opposed to system folders.
+The only difference is that administrative access (i.e. sudo) is no longer required since the destination is users' home folder, as opposed to system folders.
 
 Because the files have been installed to a custom location that CMake does not know about, CMake cannot find the RapidObj package automatically. We can fix this by providing a hint about the cmake directory whereabouts:
 
@@ -137,13 +137,13 @@ target_link_libraries(my_app PRIVATE rapidobj::rapidobj)
 
 # API
 
-The API of the RapidObj library is rather simple. It consists of just two free-standing functions: ```ParseFile()``` and ```Triangulate()```. 
+The API of the RapidObj library is rather simple. It consists of two free-standing functions: ```ParseFile()``` and ```Triangulate()```. 
 
-Function ```ParseFile()``` loads an .obj file, parses it and returns a result object. The result object contains vertex attribute arrays, shapes, and materials. A shape object contains a collection of polygons (i.e. a mesh) or a collection of polylines.
+Function ```ParseFile()``` loads an .obj file, parses it and returns a result object. The result object contains vertex attribute arrays, shapes and materials. A shape object contains a collection of polygons (i.e. a mesh) or a collection of polylines.
 
-Each polygon in a mesh may have 3 sides (triangle), 4 sides (quadrilateral), 5 sides (pentagon) - all the way up to the 255 sides maximum. Function ```Triangulate()``` takes a result object, loops through all the meshes, and decomposes polygons with more than three sides into a set of triangles. However, if the meshes were already triangulated, then the function call will do nothing.
+Each polygon in a mesh may have 3 sides (triangle), 4 sides (quadrilateral), 5 sides (pentagon) - all the way up to the 255 sides maximum. Function ```Triangulate()``` takes a result object, loops through all the meshes, and decomposes polygons with more than three sides into a set of triangles. However, if the meshes are already triangulated, then the function call will do nothing.
 
-Suppose we want to find out the total number of triangles in an .obj file. This can be accomplished by passing the .obj file path to```ParseFile()``` and triangulating the result. The next step is looping through all the meshes; in each iteration, the number of triangles in the current mesh is added to running sum. The code for this logic is shown below:
+Suppose we want to find out the total number of triangles in an .obj file. This can be accomplished by passing the .obj file path to```ParseFile()``` and triangulating the result. The next step is looping through all the meshes; in each iteration, the number of triangles in the current mesh is added to the running sum. The code for this logic is shown below:
 
 ```cpp
 #include "rapidobj/rapidobj.hpp"
@@ -186,11 +186,11 @@ Let's take a closer look at the ```Result``` object returned by the ```ParseFile
 ![rapidobj::Result](data/images/result.svg)
 3D objects are usually represented as a set of faces and a set of vertices. A vertex has attributes, the most important of which is its position. The positions are stored as Cartesian coordinates in the ```result.attributes.positions array```. An .obj file also supports two more vertex attributes: texture coordinates (used for UV mapping) and normals. These are stored in ```result.attributes.texcoords``` and ```result.attributes.normals``` arrays.
 
-A vertex is generated by indexing into the attributes array(s). An object of type ```Index``` defines a single vertex and it has three fields: ```position_index```, ```texcoord_index```, and ```normal_index```. Only the ```position_index``` is mandatory; a vertex might not have any normals or UV coordinates. In this case, -1 (invalid index) is stored in ```index.normal_index``` and ```index.texcoord_index```.
+A vertex is generated by indexing into the attributes array(s). An object of type ```Index``` defines a single vertex. It has three fields: ```position_index```, ```texcoord_index```, and ```normal_index```. Only the ```position_index``` is mandatory; a vertex might not have any normals or UV coordinates. In this case, -1 (invalid index) is stored in ```index.normal_index``` and ```index.texcoord_index```.
 
 ```Index``` objects (i.e. vertices) are stored in the ```shape.mesh.indices``` array. Because the indices array is flattened, extra information is required to distinguish individual faces. The number of vertices per face is kept in the ```shape.mesh.num_face_vertices``` array. The size of this array is equal to the number of faces in the mesh. Note that, for triangulated meshes, this complexity goes away; every entry in the ```shape.mesh.num_face_vertices``` array is 3. It is safe to assume that entries { 0, 1, 2 } of the ```shape.mesh.indices``` array form triangle face 0, entries { 3, 4, 5 } form triangle face 1, entries { 6, 7, 8 } form triangle face 2, etc.
 
-The mesh object also contains material ids per face and smoothing group ids per face. These are stored in ```shape.mesh.material_ids``` and ```shape.mesh.smoothing_group_ids```. Material IDs index into the ```result.materials``` array. Smoothing group IDs are used to calculate vertex normals, in case they are not provided.
+The mesh object also contains (per face) material IDs and smoothing group IDs. These are stored in ```shape.mesh.material_ids``` and ```shape.mesh.smoothing_group_ids```. Material IDs index into the ```result.materials``` array. Smoothing group IDs are used to calculate vertex normals in case they are not provided.
 
 Meshes are not stored directly in the result object. Instead, a ```Shape``` object contains either a mesh, polylines (```Lines```), or both. The result object can contain one or more shapes.
 
@@ -224,9 +224,9 @@ There are a few things to note:
 * The smoothing group IDs for both faces are set to 0 in the mesh ```smoothing_group_ids``` array. Value of 0 indicates that the face does not belong to any smoothing group.
 
 # Next Steps
-Typically, parsed .obj data cannot be used as is. For instance, for hardware rendering, a number of additional processing steps are required so that the data is in a format easily consumed by a GPU. RapidObj provides one convenience function, ```Triangulate()```, to assist with this task. Other tasks must be implemented by the rendering application. These may include:
+Typically, parsed .obj data cannot be used "as is". For instance, for hardware rendering, a number of additional processing steps are required so that the data is in a format easily consumed by a GPU. RapidObj provides one convenience function, ```Triangulate()```, to assist with this task. Other tasks must be implemented by the rendering application. These may include:
 * Gathering all the attributes so that the vertex data is in a single array of interleaved attributes. This step may optionally include vertex deduplication.
-* Generate normals, in case they are not provided in the .obj file. This step may use smoothing groups (if any) to create higher quality normals.
+* Generate normals in case they are not provided in the .obj file. This step may use smoothing groups (if any) to create higher quality normals.
 * Optionally optimise the meshes for rendering based on some criteria such as: material type, mesh size, number of batches to be submitted, etc.
 
 # OS Support
@@ -236,9 +236,9 @@ Typically, parsed .obj data cannot be used as is. For instance, for hardware ren
 
 macOS is TBD.
 
-# Third-party Tools and Resources
+# Third Party Tools and Resources
 
-This is a (hopefully complete) list of third-party tools and resources used by this project:
+This is a list of third party tools and resources used by this project:
 
 * [3D models](https://casual-effects.com/data/) from McGuire Computer Graphics Archive
 * [cereal](https://uscilab.github.io/cereal/) for serialization
