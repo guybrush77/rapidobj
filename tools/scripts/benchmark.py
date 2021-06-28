@@ -26,25 +26,23 @@ def measure(bench, parser, file, iterations):
         time.sleep(3)
 
     tmin = min(times)
-    tmax = max(times)
     tstdev = statistics.stdev(times)
 
     print(f'Min: {tmin}ms')
-    print(f'Max: {tmax}ms')
     print(f'Standard Deviation: {tstdev}')
 
-    return [tmin, tmax, tstdev]
+    return [tmin, tstdev]
 
 def parse_args():
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("file", help="path to .obj input file")
     arg_parser.add_argument("-b", "--bench", help="path to bench executable", metavar="path")
     arg_parser.add_argument("-o", "--out", help="output path", metavar="path")
-    arg_parser.add_argument("-i", "--iter", help="number of iterations per run", metavar="num")
+    arg_parser.add_argument("-i", "--iterations", help="number of iterations per run", metavar="num")
     args = arg_parser.parse_args()
 
     bench = args.bench or '.'
-    iter = args.iter or 10
+    iterations = args.iterations or 10
     file = args.file
     out = args.out
 
@@ -82,7 +80,7 @@ def parse_args():
 
     outfile = os.path.join(outdir, outfile)
 
-    return [bench, iter, file, outfile]
+    return [bench, iterations, file, outfile]
 
 def plot(filename, outfile, parsers, times, errors):
     green = [0.18, 0.72, 0.47, 1.0]
@@ -90,7 +88,7 @@ def plot(filename, outfile, parsers, times, errors):
     blue = [0.12, 0.47, 0.71, 1.0]
 
     plt.rcdefaults()
-    fig, ax = plt.subplots()
+    _fig, ax = plt.subplots()
 
     ax.barh(parsers, times, xerr = errors, align='center', color=[green, orange, blue])
     ax.set_xlabel('time in ms (lower is better)')
@@ -103,7 +101,7 @@ def plot(filename, outfile, parsers, times, errors):
 
 def main():
 
-    bench, iter, file, outfile = parse_args()
+    bench, iterations, file, outfile = parse_args()
 
     filename = os.path.basename(file)
 
@@ -112,19 +110,19 @@ def main():
 
     print()
     print('Using parser: OBJ-Loader')
-    obj_min, obj_max, obj_stdev = measure(bench, 'obj', file, iter)
+    obj_min, obj_stdev = measure(bench, 'obj', file, iterations)
 
     time.sleep(3)
 
     print()
     print('Using parser: tinyobjloader')
-    tiny_min, tiny_max, tiny_stdev = measure(bench, 'tiny', file, iter)
+    tiny_min, tiny_stdev = measure(bench, 'tiny', file, iterations)
 
     time.sleep(3)
 
     print()
     print('Using parser: rapidobj')
-    rapid_min, rapid_max, rapid_stdev = measure(bench, 'rapid', file, iter)
+    rapid_min, rapid_stdev = measure(bench, 'rapid', file, iterations)
 
     parsers = ('OBJ-Loader', 'tinyobjloader', 'rapidobj')
     times = [obj_min, tiny_min, rapid_min]
