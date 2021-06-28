@@ -1,5 +1,8 @@
 # RapidObj
 
+[![Standard](https://img.shields.io/badge/standard-C%2B%2B17-blue)](https://en.wikipedia.org/wiki/C%2B%2B17)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+![Platform](https://img.shields.io/badge/platform-linux--64%20%7C%20win--64-lightgrey)
 ![Build Status](https://travis-ci.com/guybrush77/rapidobj.svg?branch=master)
 
 - [About](#about)
