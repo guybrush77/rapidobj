@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.com/guybrush77/rapidobj.svg?branch=master)](https://travis-ci.com/guybrush77/rapidobj)
-
 # RapidObj
+
+![Build Status](https://travis-ci.com/guybrush77/rapidobj.svg?branch=master)
 
 - [About](#about)
 - [Integration](#integration)
@@ -14,7 +14,7 @@
 - [Third Party Tools and Resources](#third-party-tools-and-resources)
 - [License](#license)
 
-# About
+## About
 
 RapidObj is an easy-to-use, single-header C++17 library that loads and parses [Wavefront .obj files](https://en.wikipedia.org/wiki/Wavefront_.obj_file).
 
@@ -22,24 +22,28 @@ The .obj file format was first used by Wavefront Technologies around 1990. Howev
 
 RapidObj's API was influenced by another single header C++ library, [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader). From users' point of view, the two libraries look fairly similar. That said, tinyobjloader has been around for some time; it is a mature and well tested library. So, why use RapidObj library? It is fast, and especially so when parsing large files. It was designed to take full advantage of modern computer hardware. See [Benchmarks](docs/BENCHMARKS.md) page.
 
-# Integration
+## Integration
 
 ### Prerequisites
 
 You will need a C++ compiler that fully supports C++17 standard. In practice, this means:
-* GCC 8 or higher
-* MSVC 19.14 or higher
-* Clang 7 or higher
+
+- GCC 8 or higher
+- MSVC 19.14 or higher
+- Clang 7 or higher
 
 If you intend to use CMake as your build system, you will need to install CMake version 3.14 or higher.
 
 If building on Linux, make sure to first install _libaio_ library and its header files. On Debian:
+
+```bash
+sudo apt install libaio-dev
 ```
-$ sudo apt install libaio-dev
-```
+
 On RHEL or Fedora:
-```
-$ sudo yum install libaio-devel
+
+```bash
+sudo yum install libaio-devel
 ```
 
 ### Manual Integration
@@ -49,12 +53,15 @@ The simplest way to integrate the library in your project is to copy the header 
 ```cpp
 #include "rapidobj.hpp"
 ```
+
 To compile your project, make sure to use the C++17 switch (```-std=c++17``` for g++ and clang, ```/std:c++17``` for MSVC).
 
 There are some extra considerations when building a Linux project: you need to link your application against _libpthread_ and _libaio_ libraries. For example, assuming g++ compiler:
+
+```bash
+g++ -std=c++17 my_src.cpp -pthread -laio -o my_app
 ```
-$ g++ -std=c++17 my_src.cpp -pthread -laio -o my_app
-```
+
 > :page_facing_up: If you are using gcc version 8, you also have to link against the _stdc++fs_ library (_std::filesystem_ used by RapidObj is not part of _libstdc++_ until gcc version 9).
 
 ### CMake Integration
@@ -62,17 +69,22 @@ $ g++ -std=c++17 my_src.cpp -pthread -laio -o my_app
 #### External
 
 This section explains how to use RapidObj external to your project. If using the command line, perform cmake configuration and generation steps from inside the RapidObj folder:
+
+```bash
+cmake -B build .
 ```
-$ cmake -B build .
-```
+
 The next step is to actually install the RapidObj package:
+
+```bash
+cd build
+sudo make install
 ```
-$ cd build
-$ sudo make install
-```
+
 The install command will copy the files to well defined system directories. Note that this command will likely require administrative access.
 
 The only remaining step is to find the RapidObj package from inside your own CMakeLists.txt file and link against it. For example:
+
 ```cmake
 add_executable(my_app my_src.cpp)
 
@@ -88,15 +100,18 @@ RapidObj cmake script places the header file in a ```rapidobj``` subfolder of th
 ```
 
 What if you don't want to install RapidObj in a system directory? RapidObj allows you to specify custom install folders. CMake cache variable RAPIDOBJ_INCLUDE_DIR is used to set header file install location; RAPIDOBJ_CMAKE_DIR is used to set cmake files install location. For example, to install RapidObj in a folder ```local``` inside your home directory, the cmake configuration and generation steps are as follows:
-```
-$ cmake -B build -DRAPIDOBJ_INCLUDE_DIR=${HOME}/local/include -DRAPIDOBJ_CMAKE_DIR=${HOME}/local/cmake .
+
+```bash
+cmake -B build -DRAPIDOBJ_INCLUDE_DIR=${HOME}/local/include -DRAPIDOBJ_CMAKE_DIR=${HOME}/local/cmake .
 ```
 
 The install step is almost the same as before:
+
+```bash
+cd build
+make install
 ```
-$ cd build
-$ make install
-```
+
 The only difference is that administrative access (i.e. sudo) is no longer required since the destination is users' home folder, as opposed to system folders.
 
 Because the files have been installed to a custom location that CMake does not know about, CMake cannot find the RapidObj package automatically. We can fix this by providing a hint about the cmake directory whereabouts:
@@ -108,11 +123,13 @@ find_package(RapidObj REQUIRED HINTS $ENV{HOME}/local/cmake)
 
 target_link_libraries(my_app PRIVATE rapidobj::rapidobj)
 ```
+
 Once the package has been successfully installed, RapidObj directory can be deleted.
 
 #### Embedded
 
 Another way to use RapidObj is to embed it inside your project. In your project's root, create a folder named thirdparty and then copy RapidObj to this folder. Installation is not required; it is sufficient to add RapidObj's subfolder to your project:
+
 ```cmake
 add_executable(my_app my_src.cpp)
 
@@ -120,7 +137,9 @@ add_subdirectory(thirdparty/rapidobj)
 
 target_link_libraries(my_app PRIVATE rapidobj::rapidobj)
 ```
+
 If you do not wish to manually download and place RapidObj files, you can automate these steps by using CMake's FetchContent module:
+
 ```cmake
 add_executable(my_app my_src.cpp)
 
@@ -135,9 +154,9 @@ FetchContent_MakeAvailable(rapidobj)
 target_link_libraries(my_app PRIVATE rapidobj::rapidobj)
 ```
 
-# API
+## API
 
-The API of the RapidObj library is rather simple. It consists of two free-standing functions: ```ParseFile()``` and ```Triangulate()```. 
+The API of the RapidObj library is rather simple. It consists of two free-standing functions: ```ParseFile()``` and ```Triangulate()```.
 
 Function ```ParseFile()``` loads an .obj file, parses it and returns a result object. The result object contains vertex attribute arrays, shapes and materials. A shape object contains a collection of polygons (i.e. a mesh) or a collection of polylines.
 
@@ -180,9 +199,9 @@ int main()
 }
 ```
 
-# RapidObj Result
+## RapidObj Result
 
-Let's take a closer look at the ```Result``` object returned by the ```ParseFile()``` function. Its structure corresponds closely to the format of an .obj file. 
+Let's take a closer look at the ```Result``` object returned by the ```ParseFile()``` function. Its structure corresponds closely to the format of an .obj file.
 ![rapidobj::Result](data/images/result.svg)
 3D objects are usually represented as a set of faces and a set of vertices. A vertex has attributes, the most important of which is its position. The positions are stored as Cartesian coordinates in the ```result.attributes.positions array```. An .obj file also supports two more vertex attributes: texture coordinates (used for UV mapping) and normals. These are stored in ```result.attributes.texcoords``` and ```result.attributes.normals``` arrays.
 
@@ -198,10 +217,11 @@ Let's consider a concrete example:
 ![Simple Shape](data/images/shape.svg)
 The mesh in this simple shape consists of five vertices. Moving clockwise, starting from the origin, the vertices are: v1, v2, v3, v4, and v5.
 
-There are two faces in this mesh: a quad and a triangle. Moving clockwise, starting from the origin, the vertex indices of the quad are: 1, 2, 4, and 5. The vertex indices for the triangle are: 2, 3, and 4. 
+There are two faces in this mesh: a quad and a triangle. Moving clockwise, starting from the origin, the vertex indices of the quad are: 1, 2, 4, and 5. The vertex indices for the triangle are: 2, 3, and 4.
 
 An .obj file for this shape would then look like:
-```
+
+```markdown
 v  0  0  0
 v  0  1  0
 v .5  2  0
@@ -211,48 +231,52 @@ v  1  0  0
 f  1  2  4  5
 f  2  3  4
 ```
+
 Running the ```ParseFile``` on this .obj file would produce the following:
 
 ![Simple Shape Result](data/images/example.svg)
 
 There are a few things to note:
-* Vertex coordinates x, y, z are interleaved in the attributes ```positions``` array (i.e. v1<sub>x</sub>, v1<sub>y</sub>, v1<sub>z</sub>, v2<sub>x</sub>, v2<sub>y</sub>, v2<sub>z</sub>, ... , v5<sub>x</sub>, v5<sub>y</sub>, v5<sub>z</sub>).
-* Since we are not using texture coordinates or normals in this example, attribute ```texcoords``` and ```normals``` arrays are empty; likewise, all the mesh texcoords and normals indices are set to -1 in the mesh ```indices``` array.
-* All the position indices in the mesh ```indices``` array are decremented by 1 compared to the .obj file face indices (because C/C++ arrays are zero-based).
-* To index into the attribute positions array, it is necessary to multiply the mesh ```indices``` position index by 3 and then add an offset. For example, assuming position index ```n```, the effective indices for vertex position coordinates (x, y, z) are: ```(3n + 0, 3n + 1, 3n + 2)```.
-* The material IDs for both faces are set to -1 in the mesh ```material_ids``` array. Value of -1 means that no material is assigned to the face.
-* The smoothing group IDs for both faces are set to 0 in the mesh ```smoothing_group_ids``` array. Value of 0 indicates that the face does not belong to any smoothing group.
 
-# Next Steps
+- Vertex coordinates x, y, z are interleaved in the attributes ```positions``` array (i.e. v1<sub>x</sub>, v1<sub>y</sub>, v1<sub>z</sub>, v2<sub>x</sub>, v2<sub>y</sub>, v2<sub>z</sub>, ... , v5<sub>x</sub>, v5<sub>y</sub>, v5<sub>z</sub>).
+- Since we are not using texture coordinates or normals in this example, attribute ```texcoords``` and ```normals``` arrays are empty; likewise, all the mesh texcoords and normals indices are set to -1 in the mesh ```indices``` array.
+- All the position indices in the mesh ```indices``` array are decremented by 1 compared to the .obj file face indices (because C/C++ arrays are zero-based).
+- To index into the attribute positions array, it is necessary to multiply the mesh ```indices``` position index by 3 and then add an offset. For example, assuming position index ```n```, the effective indices for vertex position coordinates (x, y, z) are: ```(3n + 0, 3n + 1, 3n + 2)```.
+- The material IDs for both faces are set to -1 in the mesh ```material_ids``` array. Value of -1 means that no material is assigned to the face.
+- The smoothing group IDs for both faces are set to 0 in the mesh ```smoothing_group_ids``` array. Value of 0 indicates that the face does not belong to any smoothing group.
+
+## Next Steps
+
 Typically, parsed .obj data cannot be used "as is". For instance, for hardware rendering, a number of additional processing steps are required so that the data is in a format easily consumed by a GPU. RapidObj provides one convenience function, ```Triangulate()```, to assist with this task. Other tasks must be implemented by the rendering application. These may include:
-* Gathering all the attributes so that the vertex data is in a single array of interleaved attributes. This step may optionally include vertex deduplication.
-* Generate normals in case they are not provided in the .obj file. This step may use smoothing groups (if any) to create higher quality normals.
-* Optionally optimise the meshes for rendering based on some criteria such as: material type, mesh size, number of batches to be submitted, etc.
 
-# OS Support
+- Gathering all the attributes so that the vertex data is in a single array of interleaved attributes. This step may optionally include vertex deduplication.
+- Generate normals in case they are not provided in the .obj file. This step may use smoothing groups (if any) to create higher quality normals.
+- Optionally optimise the meshes for rendering based on some criteria such as: material type, mesh size, number of batches to be submitted, etc.
 
-* Linux
-* Windows
+## OS Support
+
+- Linux
+- Windows
 
 macOS is TBD.
 
-# Third Party Tools and Resources
+## Third Party Tools and Resources
 
 This is a list of third party tools and resources used by this project:
 
-* [3D models](https://casual-effects.com/data/) from McGuire Computer Graphics Archive
-* [cereal](https://uscilab.github.io/cereal/) for serialization
-* [CMake](https://cmake.org/) for build automation
-* [cxxopts](https://github.com/jarro2783/cxxopts) for command line option parsing
-* [doctest](https://github.com/onqtam/doctest) for testing
-* [earcut.hpp](https://github.com/mapbox/earcut.hpp) for polygon triangulation
-* [fast_float](https://github.com/fastfloat/fast_float) for string to float parsing
-* [OBJ-Loader](https://github.com/Bly7/OBJ-Loader) for .obj file parsing
-* [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader) for .obj file parsing
-* [Travis CI](https://travis-ci.org/) for continuous integration
-* [xxHash](https://github.com/Cyan4973/xxHash) for hashing
+- [3D models](https://casual-effects.com/data/) from McGuire Computer Graphics Archive
+- [cereal](https://uscilab.github.io/cereal/) for serialization
+- [CMake](https://cmake.org/) for build automation
+- [cxxopts](https://github.com/jarro2783/cxxopts) for command line option parsing
+- [doctest](https://github.com/onqtam/doctest) for testing
+- [earcut.hpp](https://github.com/mapbox/earcut.hpp) for polygon triangulation
+- [fast_float](https://github.com/fastfloat/fast_float) for string to float parsing
+- [OBJ-Loader](https://github.com/Bly7/OBJ-Loader) for .obj file parsing
+- [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader) for .obj file parsing
+- [Travis CI](https://travis-ci.org/) for continuous integration
+- [xxHash](https://github.com/Cyan4973/xxHash) for hashing
 
-# License
+## License
 
 The RapidObj single-header library is licensed under the MIT License.
 
