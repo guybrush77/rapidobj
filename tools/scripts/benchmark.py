@@ -8,6 +8,10 @@ def measure(bench, parser, file, iterations):
     prefix = 'Parse time [ms]:'
 
     for i in range(1, iterations + 1):
+        rc = os.system("sudo echo 3 > /proc/sys/vm/drop_caches")
+        if rc != 0:
+            sys.exit('failed to clear page cache')
+        time.sleep(1)
         result = subprocess.run([bench, '--parser', parser, file], stdout=subprocess.PIPE).stdout.decode('ascii')
         lines = result.split('\n')
         t = None
@@ -23,7 +27,7 @@ def measure(bench, parser, file, iterations):
 
         times.append(t)
         print(f'Iteration {i}: {t}ms')
-        time.sleep(3)
+        time.sleep(2)
 
     tmin = min(times)
     tstdev = statistics.stdev(times)
@@ -109,14 +113,8 @@ def main():
     print(f'Parsing {filename!r}')
 
     print()
-    print('Using parser: OBJ-Loader')
-    obj_min, obj_stdev = measure(bench, 'obj', file, iterations)
-
-    time.sleep(3)
-
-    print()
-    print('Using parser: tinyobjloader')
-    tiny_min, tiny_stdev = measure(bench, 'tiny', file, iterations)
+    print('Using parser: fast_obj')
+    fast_min, fast_stdev = measure(bench, 'fast', file, iterations)
 
     time.sleep(3)
 
@@ -124,9 +122,15 @@ def main():
     print('Using parser: rapidobj')
     rapid_min, rapid_stdev = measure(bench, 'rapid', file, iterations)
 
-    parsers = ('OBJ-Loader', 'tinyobjloader', 'rapidobj')
-    times = [obj_min, tiny_min, rapid_min]
-    errors = [obj_stdev, tiny_stdev, rapid_stdev]
+    time.sleep(3)
+
+    print()
+    print('Using parser: tinyobjloader')
+    tiny_min, tiny_stdev = measure(bench, 'tiny', file, iterations)
+
+    parsers = ('fast_obj', 'rapidobj', 'tinyobjloader')
+    times = [fast_min, rapid_min, tiny_min]
+    errors = [fast_stdev, rapid_stdev, tiny_stdev]
 
     plot(filename, outfile, parsers, times, errors)
 

@@ -54,21 +54,21 @@ FetchContent_MakeAvailable(doctest)
 
 
 #------------------------------------------------------------------------------------
-# Fetch OBJ-Loader
+# Fetch fast_obj
 #------------------------------------------------------------------------------------
 
 FetchContent_Declare(
-    objloader
-    GIT_REPOSITORY  https://github.com/Bly7/OBJ-Loader.git
-    GIT_TAG         origin/master
+    fast_obj
+    GIT_REPOSITORY  https://github.com/thisistherk/fast_obj
+    GIT_TAG         v1.1
     GIT_SHALLOW     TRUE
 )
 
-FetchContent_MakeAvailable(objloader)
+FetchContent_MakeAvailable(fast_obj)
 
-add_library(objloader INTERFACE)
+add_library(fast_obj INTERFACE)
 
-target_include_directories(objloader INTERFACE "${objloader_SOURCE_DIR}/Source")
+target_include_directories(fast_obj INTERFACE "${fast_obj_SOURCE_DIR}")
 
 
 #------------------------------------------------------------------------------------

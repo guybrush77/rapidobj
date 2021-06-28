@@ -17,7 +17,8 @@
 #define BEGIN_DISABLE_WARNINGS \
     __pragma(warning(push)) \
     __pragma(warning(disable : 4244)) /* conversion from 'T1' to 'T2', possible loss of data */ \
-    __pragma(warning(disable : 4701)) /* potentially uninitialized local variable used */
+    __pragma(warning(disable : 4701)) /* potentially uninitialized local variable used */ \
+    __pragma(warning(disable : 4996)) /* fopen: This function or variable may be unsafe */
 
 #define END_DISABLE_WARNINGS __pragma(warning(pop))
 
@@ -40,15 +41,17 @@
 
 BEGIN_DISABLE_WARNINGS
 
-#include "OBJ_Loader.h"
+#define FAST_OBJ_IMPLEMENTATION
+#include "fast_obj.h"
+
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "tiny_obj_loader.h"
+
 #include "cxxopts.hpp"
 
 END_DISABLE_WARNINGS
 
 #include "rapidobj/rapidobj.hpp"
-
-#define TINYOBJLOADER_IMPLEMENTATION
-#include "tiny_obj_loader.h"
 
 int Parse(int argc, char* argv[])
 {
@@ -59,7 +62,7 @@ int Parse(int argc, char* argv[])
 
     options.positional_help("input-file");
 
-    options.add_options()("p,parser", "Which parser to use.", value<std::string>(), "obj|rapid|tiny");
+    options.add_options()("p,parser", "Which parser to use.", value<std::string>(), "fast|rapid|tiny");
     options.add_options()("h,help", "Show help.");
     options.add_options()("input-file", "", value<std::string>());
 
@@ -79,8 +82,8 @@ int Parse(int argc, char* argv[])
 
     const auto parser = result["parser"].as<std::string>();
 
-    if (parser != "obj" && parser != "rapid" && parser != "tiny") {
-        std::cout << "Error: parser not recognized (must be: obj, tiny, or rapid)\n";
+    if (parser != "fast" && parser != "rapid" && parser != "tiny") {
+        std::cout << "Error: parser not recognized (must be: fast, rapid, or tiny)\n";
         return EXIT_FAILURE;
     }
 
@@ -105,15 +108,13 @@ int Parse(int argc, char* argv[])
 
     auto duration = std::chrono::milliseconds();
 
-    if (parser == "obj") {
+    if (parser == "fast") {
         auto t1 = std::chrono::system_clock::now();
 
-        auto loader = objl::Loader();
+        auto* fast_obj = fast_obj_read(input_filepath.string().c_str());
 
-        bool success = loader.LoadFile(input_file.string());
-
-        if (!success) {
-            std::cout << "Obj-Loader Error\n";
+        if (!fast_obj) {
+            std::cout << "fast_obj error\n";
             return EXIT_FAILURE;
         }
 
@@ -132,13 +133,6 @@ int Parse(int argc, char* argv[])
             return EXIT_FAILURE;
         }
 
-        rapidobj::Triangulate(rapid_result);
-
-        if (rapid_result.error) {
-            std::cout << rapid_result.error.code.message() << "\n";
-            return EXIT_FAILURE;
-        }
-
         auto t2 = std::chrono::system_clock::now();
 
         duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
@@ -147,6 +141,8 @@ int Parse(int argc, char* argv[])
     if (parser == "tiny") {
         auto tiny_reader = tinyobj::ObjReader();
         auto tiny_config = tinyobj::ObjReaderConfig();
+
+        tiny_config.triangulate = false;
 
         auto t1 = std::chrono::system_clock::now();
 
