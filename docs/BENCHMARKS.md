@@ -1,7 +1,7 @@
 # Benchmarks
 
 This is a comparison of the time it takes to load and parse various .obj files. The libraries compared are:
-* OBJ-Loader - https://github.com/Bly7/OBJ-Loader
+* fast_obj - https://github.com/thisistherk/fast_obj
 * rapidobj - https://github.com/guybrush77/rapidobj
 * tinyobjloader - https://github.com/tinyobjloader/tinyobjloader
 
