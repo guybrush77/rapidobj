@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.20)
 
 add_library(rapidobj INTERFACE)
 add_library(rapidobj::rapidobj ALIAS rapidobj)
