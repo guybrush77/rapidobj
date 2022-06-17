@@ -7,14 +7,13 @@
   },
   "configurePresets": [
     {
-      "name": "default-config",
+      "name": "base-config",
       "hidden": true,
       "cacheVariables": {
         "RAPIDOBJ_BuildExamples": true,
         "RAPIDOBJ_BuildTests": true,
         "RAPIDOBJ_BuildTools": true
-      },
-      "generator": "Ninja"
+      }
     },
     {
       "name": "arch-x64",
@@ -25,9 +24,18 @@
       }
     },
     {
+      "name": "arch-arm64",
+      "hidden": true,
+      "architecture": {
+        "value": "ARM64",
+        "strategy": "external"
+      }
+    },
+    {
       "name": "os-linux",
       "hidden": true,
-      "inherits": "default-config",
+      "inherits": "base-config",
+      "generator": "Unix Makefiles",
       "vendor": {
         "microsoft.com/VisualStudioSettings/CMake/1.0": {
           "hostOS": [ "Linux" ]
@@ -37,10 +45,22 @@
     {
       "name": "os-windows",
       "hidden": true,
-      "inherits": "default-config",
+      "inherits": "base-config",
+      "generator": "Ninja",
       "vendor": {
         "microsoft.com/VisualStudioSettings/CMake/1.0": {
           "hostOS": [ "Windows" ]
+        }
+      }
+    },
+    {
+      "name": "os-mac",
+      "hidden": true,
+      "inherits": "base-config",
+      "generator": "Unix Makefiles",
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "macOS" ]
         }
       }
     },
@@ -72,76 +92,68 @@
       }
     },
     {
-      "name": "x64-linux-clang-release",
-      "description": "x64 Linux Clang Release",
-      "inherits": [ "arch-x64", "os-linux", "compiler-clang" ],
-      "binaryDir": "${sourceDir}/build/${presetName}",
+      "name": "type-debug",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "type-release",
+      "hidden": true,
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
+    },
+    {
+      "name": "x64-linux-clang-release",
+      "inherits": [ "arch-x64", "os-linux", "compiler-clang", "type-release" ],
+      "binaryDir": "${sourceDir}/build/${presetName}"
     },
     {
       "name": "x64-linux-clang-debug",
-      "description": "x64 Linux Clang Debug",
-      "inherits": [ "arch-x64", "os-linux", "compiler-clang" ],
-      "binaryDir": "${sourceDir}/build/${presetName}",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
+      "inherits": [ "arch-x64", "os-linux", "compiler-clang", "type-debug" ],
+      "binaryDir": "${sourceDir}/build/${presetName}"
     },
     {
       "name": "x64-linux-gcc-release",
-      "description": "x64 Linux GCC Release",
-      "inherits": [ "arch-x64", "os-linux", "compiler-gcc" ],
-      "binaryDir": "${sourceDir}/build/${presetName}",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
-      }
+      "inherits": [ "arch-x64", "os-linux", "compiler-gcc", "type-release" ],
+      "binaryDir": "${sourceDir}/build/${presetName}"
     },
     {
       "name": "x64-linux-gcc-debug",
-      "description": "x64 Linux GCC Debug",
-      "inherits": [ "arch-x64", "os-linux", "compiler-gcc" ],
-      "binaryDir": "${sourceDir}/build/${presetName}",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
+      "inherits": [ "arch-x64", "os-linux", "compiler-gcc", "type-debug" ],
+      "binaryDir": "${sourceDir}/build/${presetName}"
     },
     {
       "name": "x64-windows-msvc-release",
-      "description": "x64 Windows MSVC Release",
-      "inherits": [ "arch-x64", "os-windows", "compiler-msvc" ],
-      "binaryDir": "${sourceDir}/build/${presetName}",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
-      }
+      "inherits": [ "arch-x64", "os-windows", "compiler-msvc", "type-release" ],
+      "binaryDir": "${sourceDir}/build/${presetName}"
     },
     {
       "name": "x64-windows-msvc-debug",
-      "description": "x64 Windows MSVC Debug",
-      "inherits": [ "arch-x64", "os-windows", "compiler-msvc" ],
-      "binaryDir": "${sourceDir}/build/${presetName}",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
+      "inherits": [ "arch-x64", "os-windows", "compiler-msvc", "type-debug" ],
+      "binaryDir": "${sourceDir}/build/${presetName}"
     },
     {
       "name": "x64-windows-clang-release",
-      "description": "x64 Windows Clang Release",
-      "inherits": [ "arch-x64", "os-windows", "compiler-clang" ],
-      "binaryDir": "${sourceDir}/build/${presetName}",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
-      }
+      "inherits": [ "arch-x64", "os-windows", "compiler-clang", "type-release" ],
+      "binaryDir": "${sourceDir}/build/${presetName}"
     },
     {
       "name": "x64-windows-clang-debug",
-      "description": "x64 Windows Clang Debug",
-      "inherits": [ "arch-x64", "os-windows", "compiler-clang" ],
-      "binaryDir": "${sourceDir}/build/${presetName}",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
+      "inherits": [ "arch-x64", "os-windows", "compiler-clang", "type-debug" ],
+      "binaryDir": "${sourceDir}/build/${presetName}"
+    },
+    {
+      "name": "arm64-mac-clang-release",
+      "inherits": [ "arch-arm64", "os-mac", "compiler-clang", "type-release" ],
+      "binaryDir": "${sourceDir}/build/${presetName}"
+    },
+    {
+      "name": "arm64-mac-clang-debug",
+      "inherits": [ "arch-arm64", "os-mac", "compiler-clang", "type-debug" ],
+      "binaryDir": "${sourceDir}/build/${presetName}"
     }
   ]
 }

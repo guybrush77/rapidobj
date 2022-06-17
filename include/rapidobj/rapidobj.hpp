@@ -52,6 +52,12 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 #define NOMINMAX
 #include <windows.h>
 
+#elif __APPLE__
+
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #endif
 
 #define RAPIDOBJ_VERSION_MAJOR 0
@@ -99,7 +105,7 @@ class Array final {
         m_state.size = size;
     }
 
-    Array(const Array&) = delete;
+    Array(const Array&)            = delete;
     Array& operator=(const Array&) = delete;
 
     Array(Array&& other) noexcept { m_state = std::exchange(other.m_state, {}); }
@@ -3748,7 +3754,7 @@ class File final {
             m_state.error = std::error_code(errno, std::system_category());
         }
     }
-    File(const File&) = delete;
+    File(const File&)            = delete;
     File& operator=(const File&) = delete;
     File(File&& rhs) noexcept { m_state = std::exchange(rhs.m_state, {}); }
     File& operator=(File&& rhs) noexcept
@@ -3789,16 +3795,10 @@ class AsyncReader final {
         }
     }
 
-    AsyncReader(const AsyncReader&) = delete;
+    AsyncReader(const AsyncReader&)            = delete;
     AsyncReader& operator=(const AsyncReader&) = delete;
-    AsyncReader(AsyncReader&& rhs) noexcept { m_state = std::exchange(rhs.m_state, {}); }
-    AsyncReader& operator=(AsyncReader&& rhs) noexcept
-    {
-        if (this != &rhs) {
-            m_state = std::exchange(rhs.m_state, {});
-        }
-        return *this;
-    }
+    AsyncReader(AsyncReader&&) noexcept        = delete;
+    AsyncReader& operator=(AsyncReader&&)      = delete;
     ~AsyncReader() noexcept { io_destroy(m_state.context); }
 
     auto ReadBlock(size_t offset, size_t size, char* buffer)
@@ -3886,7 +3886,7 @@ class File final {
 
         m_state.size = static_cast<size_t>(size.QuadPart);
     }
-    File(const File&) = delete;
+    File(const File&)            = delete;
     File& operator=(const File&) = delete;
     File(File&& rhs) noexcept { m_state = std::exchange(rhs.m_state, {}); }
     File& operator=(File&& rhs) noexcept
@@ -3934,16 +3934,10 @@ class AsyncReader final {
 
         m_state.file = file.handle();
     }
-    AsyncReader(const AsyncReader&) = delete;
+    AsyncReader(const AsyncReader&)            = delete;
     AsyncReader& operator=(const AsyncReader&) = delete;
-    AsyncReader(AsyncReader&& rhs) noexcept { m_state = std::exchange(rhs.m_state, {}); }
-    AsyncReader& operator=(AsyncReader&& rhs) noexcept
-    {
-        if (this != &rhs) {
-            m_state = std::exchange(rhs.m_state, {});
-        }
-        return *this;
-    }
+    AsyncReader(AsyncReader&&)                 = delete;
+    AsyncReader& operator=(AsyncReader&&)      = delete;
     ~AsyncReader() noexcept { Destroy(); }
 
     auto ReadBlock(size_t offset, size_t size, char* buffer)
@@ -4003,6 +3997,119 @@ class AsyncReader final {
         OVERLAPPED      overlapped{};
         std::error_code error{};
     } m_state;
+};
+
+#elif __APPLE__
+
+inline auto AlignedAllocate(size_t size, size_t alignment)
+{
+    return static_cast<char*>(aligned_alloc(alignment, size));
+}
+
+struct AlignedDeleter final {
+    void operator()(void* ptr) const { free(ptr); }
+};
+
+class File final {
+  public:
+    File(const std::filesystem::path& filepath)
+    {
+        auto filepath_string = filepath.string();
+
+        if (-1 == stat(filepath_string.c_str(), &m_state.info)) {
+            m_state.error = std::error_code(errno, std::system_category());
+            return;
+        }
+
+        m_state.fd = open(filepath_string.c_str(), O_RDONLY);
+
+        if (-1 == m_state.fd) {
+            m_state.error = std::error_code(errno, std::system_category());
+        }
+    }
+    File(const File&) = delete;
+    File& operator=(const File&) = delete;
+    File(File&& rhs) noexcept { m_state = std::exchange(rhs.m_state, {}); }
+    File& operator=(File&& rhs) noexcept
+    {
+        if (this != &rhs) {
+            m_state = std::exchange(rhs.m_state, {});
+        }
+        return *this;
+    }
+    ~File() noexcept
+    {
+        if (m_state.fd != -1) {
+            close(m_state.fd);
+        }
+    }
+
+    explicit operator bool() const noexcept { return m_state.fd != -1; }
+    auto handle() const noexcept { return m_state.fd; }
+    auto size() const noexcept { return static_cast<size_t>(m_state.info.st_size); }
+    auto error() const noexcept { return m_state.error; }
+
+  private:
+    struct {
+        int fd = -1;
+        struct stat info {};
+        std::error_code error{};
+    } m_state;
+};
+
+struct ReadRequest final {
+    off_t offset{};
+    size_t size{};
+    char* buffer{};
+};
+
+class AsyncReader final {
+  public:
+    AsyncReader(const File& file) noexcept : m_fd{ file.handle() }
+    {
+        assert(m_state.file != -1);
+
+        fcntl(m_fd, F_NOCACHE, 1);
+    }
+
+    auto ReadBlock(size_t offset, size_t size, char* buffer)
+    {
+        assert(buffer);
+        assert(std::uintptr_t(buffer) % 4096 == 0);
+
+        m_request = ReadRequest{ static_cast<off_t>(offset), size, buffer };
+
+        radvisory args{};
+        args.ra_offset = static_cast<off_t>(offset);
+        args.ra_count = static_cast<int>(size);
+
+        auto result = fcntl(m_fd, F_RDADVISE, &args);
+
+        if (result == -1) {
+            return std::error_code(errno, std::system_category());
+        }
+
+        return std::error_code();
+    }
+
+    auto WaitForResult()
+    {
+        auto n_bytes_read = pread(m_fd, m_request.buffer, m_request.size, m_request.offset);
+
+        if (n_bytes_read == -1) {
+            return std::make_pair(size_t{}, std::error_code(errno, std::system_category()));
+        }
+
+        return std::make_pair(static_cast<size_t>(n_bytes_read), std::error_code());
+    }
+
+    auto Error() const noexcept { return m_error; }
+
+  private:
+    inline static thread_local ReadRequest m_request{};
+
+    int m_fd = -1;
+    std::error_code m_error{};
 };
 
 #endif
