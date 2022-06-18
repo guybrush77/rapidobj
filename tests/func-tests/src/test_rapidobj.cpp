@@ -23,6 +23,60 @@ static auto MakeTestTriangulated(const std::string& path)
     return rapidobj::test::ParseTest(basepath + "/" + path, rapidobj::test::Triangulate::Yes);
 }
 
+TEST_CASE("cube")
+{
+    auto test = MakeTest("cube/cube.obj.test");
+
+    CHECK(test.IsTestValid());
+
+    CHECK(test.IsEqualToReference());
+}
+
+TEST_CASE("cube-triangulated")
+{
+    auto test = MakeTestTriangulated("cube/cube.obj.tri.test");
+
+    CHECK(test.IsTestValid());
+
+    CHECK(test.IsEqualToReference());
+}
+
+TEST_CASE("mario")
+{
+    auto test = MakeTest("mario/mario.obj.test");
+
+    CHECK(test.IsTestValid());
+
+    CHECK(test.IsEqualToReference());
+}
+
+TEST_CASE("mario-triangulated")
+{
+    auto test = MakeTestTriangulated("mario/mario.obj.tri.test");
+
+    CHECK(test.IsTestValid());
+
+    CHECK(test.IsEqualToReference());
+}
+
+TEST_CASE("sponza")
+{
+    auto test = MakeTest("sponza/sponza.obj.test");
+
+    CHECK(test.IsTestValid());
+
+    CHECK(test.IsEqualToReference());
+}
+
+TEST_CASE("sponza-triangulated")
+{
+    auto test = MakeTestTriangulated("sponza/sponza.obj.tri.test");
+
+    CHECK(test.IsTestValid());
+
+    CHECK(test.IsEqualToReference());
+}
+
 TEST_CASE("teapot")
 {
     auto test = MakeTest("teapot/teapot.obj.test");
