@@ -2,7 +2,7 @@
 
 [![Standard](https://img.shields.io/badge/standard-C%2B%2B17-blue)](https://en.wikipedia.org/wiki/C%2B%2B17)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-![Platform](https://img.shields.io/badge/platform-linux--64%20%7C%20win--64-lightgrey)
+![Platform](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-blue)
 ![Build Status](https://travis-ci.com/guybrush77/rapidobj.svg?branch=master)
 
 - [About](#about)
@@ -35,7 +35,7 @@ You will need a C++ compiler that fully supports C++17 standard. In practice, th
 - MSVC 19.14 or higher
 - Clang 7 or higher
 
-If you intend to use CMake as your build system, you will need to install CMake version 3.14 or higher.
+If you intend to use CMake as your build system, you will need to install CMake version 3.20 or higher.
 
 If building on Linux, make sure to first install _libaio_ library and its header files. On Debian:
 
@@ -258,10 +258,9 @@ Typically, parsed .obj data cannot be used "as is". For instance, for hardware r
 
 ## OS Support
 
-- Linux
 - Windows
-
-macOS is TBD.
+- macOS
+- Linux
 
 ## Third Party Tools and Resources
 
@@ -274,7 +273,6 @@ This is a list of third party tools and resources used by this project:
 - [doctest](https://github.com/onqtam/doctest) for testing
 - [earcut.hpp](https://github.com/mapbox/earcut.hpp) for polygon triangulation
 - [fast_float](https://github.com/fastfloat/fast_float) for string to float parsing
-- [OBJ-Loader](https://github.com/Bly7/OBJ-Loader) for .obj file parsing
 - [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader) for .obj file parsing
 - [Travis CI](https://travis-ci.org/) for continuous integration
 - [xxHash](https://github.com/Cyan4973/xxHash) for hashing
