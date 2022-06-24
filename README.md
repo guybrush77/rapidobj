@@ -3,7 +3,7 @@
 [![Standard](https://img.shields.io/badge/standard-C%2B%2B17-blue)](https://en.wikipedia.org/wiki/C%2B%2B17)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 ![Platform](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-blue)
-![Build Status](https://github.com/guybrush77/rapidobj/actions/workflows/build.yml/badge.svg?branch=master)
+![Build Status](https://github.com/guybrush77/rapidobj/actions/workflows/build-and-test-extra.yml/badge.svg?event=pull_request)
 
 - [About](#about)
 - [Integration](#integration)
