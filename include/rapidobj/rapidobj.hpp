@@ -4067,7 +4067,7 @@ class AsyncReader final {
   public:
     AsyncReader(const File& file) noexcept : m_fd{ file.handle() }
     {
-        assert(m_state.file != -1);
+        assert(m_fd != -1);
 
         fcntl(m_fd, F_NOCACHE, 1);
     }
