@@ -2,6 +2,8 @@ name: Build and Test
 
 on:
   push:
+    branches-ignore:
+      - master
     paths-ignore:
       - "docs/**"
       - "*.md"
