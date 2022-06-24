@@ -1,0 +1,67 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+    - develop
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        build-type: [ Debug, Release ]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: lukka/get-cmake@latest
+
+      - name: Install libaio
+        if: runner.os == 'Linux'
+        run: sudo apt install -y libaio-dev
+      
+      - name: Configure
+        run: >
+          cmake -B ${{ github.workspace }}/build
+          -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
+          -DRAPIDOBJ_BuildTools=ON
+          -DRAPIDOBJ_BuildTests=ON
+          -DRAPIDOBJ_BuildExamples=ON .
+
+      - name: Build
+        run: cmake --build ${{ github.workspace }}/build
+ 
+  build-extra:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [ { cxx: g++-8, c: gcc-8 }, { cxx: clang++-7, c: clang-7 } ]
+        build-type: [ Debug, Release ]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: lukka/get-cmake@latest
+
+      - name: Install libaio
+        run: sudo apt install -y libaio-dev
+    
+      - name: Install compiler
+        run: sudo apt install -y ${{ startsWith(matrix.compiler.c, 'gcc') && matrix.compiler.cxx || matrix.compiler.c }}
+
+      - name: Configure
+        run: >
+          cmake -B ${{ github.workspace }}/build
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }}
+          -DCMAKE_C_COMPILER=${{ matrix.compiler.c }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
+          -DRAPIDOBJ_BuildTools=ON
+          -DRAPIDOBJ_BuildTests=ON
+          -DRAPIDOBJ_BuildExamples=ON .
+
+      - name: Build
+        run: cmake --build ${{ github.workspace }}/build
+        
