@@ -24,19 +24,20 @@ jobs:
       
       - name: Configure
         run: >
-          cmake -B ${{ github.workspace }}/build
+          cmake
+          -B ${{ github.workspace }}/build
           -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
           -DRAPIDOBJ_BuildTools=ON
           -DRAPIDOBJ_BuildTests=ON
           -DRAPIDOBJ_BuildExamples=ON .
 
       - name: Build
-        run: cmake --build ${{ github.workspace }}/build
+        run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build-type }}
 
       - name: Test
         run: |
           cd ${{ github.workspace }}/build
-          ctest
+          ctest --verbose -C ${{ matrix.build-type }}
 
   build-extra:
     runs-on: ubuntu-latest
