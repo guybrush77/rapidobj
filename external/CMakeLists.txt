@@ -12,7 +12,7 @@ set(JUST_INSTALL_CEREAL ON)
 FetchContent_Declare(
     cereal
     GIT_REPOSITORY  https://github.com/USCiLab/cereal
-    GIT_TAG         v1.3.0
+    GIT_TAG         v1.3.2
     GIT_SHALLOW     TRUE
 )
 
@@ -60,15 +60,11 @@ FetchContent_MakeAvailable(doctest)
 FetchContent_Declare(
     fast_obj
     GIT_REPOSITORY  https://github.com/thisistherk/fast_obj
-    GIT_TAG         v1.1
+    GIT_TAG         v1.2
     GIT_SHALLOW     TRUE
 )
 
 FetchContent_MakeAvailable(fast_obj)
-
-add_library(fast_obj INTERFACE)
-
-target_include_directories(fast_obj INTERFACE "${fast_obj_SOURCE_DIR}")
 
 
 #------------------------------------------------------------------------------------

@@ -33,6 +33,11 @@ jobs:
       - name: Build
         run: cmake --build ${{ github.workspace }}/build
 
+      - name: Test
+        run: |
+          cd ${{ github.workspace }}/build
+          ctest
+
   build-extra:
     runs-on: ubuntu-latest
     strategy:
@@ -62,3 +67,8 @@ jobs:
 
       - name: Build
         run: cmake --build ${{ github.workspace }}/build
+
+      - name: Test
+        run: |
+          cd ${{ github.workspace }}/build
+          ctest

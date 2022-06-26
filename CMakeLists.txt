@@ -13,6 +13,7 @@ project(RapidObj VERSION ${VERSION} LANGUAGES CXX)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
+include(CTest)
 
 option(RAPIDOBJ_BuildTests "Build Tests." OFF)
 option(RAPIDOBJ_BuildTools "Build Tools." OFF)
