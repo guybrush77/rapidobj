@@ -41,25 +41,14 @@ END_DISABLE_WARNINGS
 
 static std::string ToBase16(XXH128_hash_t hash)
 {
-    char buffer[16]{};
+    std::stringstream ss;
 
-    if (auto [ptr, ec] = std::to_chars(std::begin(buffer), std::end(buffer), hash.high64, 16); ec != std::errc()) {
-        return {};
-    }
+    ss.width(16);
+    ss.fill('0');
 
-    auto out = std::string(buffer, 16);
+    ss << std::hex << hash.high64 << hash.low64;
 
-    if (auto [ptr, ec] = std::to_chars(std::begin(buffer), std::end(buffer), hash.low64, 16); ec != std::errc()) {
-        return {};
-    }
-
-    out.append(buffer, 16);
-
-    for (char& c : out) {
-        c = static_cast<char>(std::toupper(c));
-    }
-
-    return out;
+    return ss.str();
 }
 
 namespace rapidobj {
