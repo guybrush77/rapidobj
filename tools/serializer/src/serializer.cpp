@@ -46,7 +46,7 @@ static std::string ToBase16(XXH128_hash_t hash)
     ss.width(16);
     ss.fill('0');
 
-    ss << std::hex << hash.high64 << hash.low64;
+    ss << std::uppercase << std::hex << hash.high64 << hash.low64;
 
     return ss.str();
 }
