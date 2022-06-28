@@ -274,7 +274,6 @@ This is a list of third party tools and resources used by this project:
 - [earcut.hpp](https://github.com/mapbox/earcut.hpp) for polygon triangulation
 - [fast_float](https://github.com/fastfloat/fast_float) for string to float parsing
 - [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader) for .obj file parsing
-- [Travis CI](https://travis-ci.org/) for continuous integration
 - [xxHash](https://github.com/Cyan4973/xxHash) for hashing
 
 ## License
