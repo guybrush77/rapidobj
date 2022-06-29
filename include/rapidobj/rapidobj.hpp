@@ -3724,6 +3724,23 @@ struct CopyIndices final {
     } state{};
 };
 
+struct Reader {
+    struct ReadResult final {
+        std::size_t     bytes_read;
+        std::error_code error_code;
+    };
+
+    virtual ~Reader() noexcept = default;
+
+    virtual std::error_code ReadBlock(size_t offset, size_t size, char* buffer) = 0;
+    virtual ReadResult      WaitForResult()                                     = 0;
+
+    std::error_code Error() const noexcept { return m_error; }
+
+  protected:
+    std::error_code m_error{};
+};
+
 namespace sys {
 
 #ifdef __linux__
@@ -3743,75 +3760,62 @@ class File final {
     {
         auto filepath_string = filepath.string();
 
-        if (-1 == stat(filepath_string.c_str(), &m_state.info)) {
-            m_state.error = std::error_code(errno, std::system_category());
+        if (-1 == stat(filepath_string.c_str(), &m_info)) {
+            m_error = std::error_code(errno, std::system_category());
             return;
         }
 
-        m_state.fd = open(filepath_string.c_str(), O_DIRECT, O_RDONLY);
+        m_fd = open(filepath_string.c_str(), O_DIRECT, O_RDONLY);
 
-        if (-1 == m_state.fd) {
-            m_state.error = std::error_code(errno, std::system_category());
+        if (-1 == m_fd) {
+            m_error = std::error_code(errno, std::system_category());
         }
     }
     File(const File&)            = delete;
     File& operator=(const File&) = delete;
-    File(File&& rhs) noexcept { m_state = std::exchange(rhs.m_state, {}); }
-    File& operator=(File&& rhs) noexcept
-    {
-        if (this != &rhs) {
-            m_state = std::exchange(rhs.m_state, {});
-        }
-        return *this;
-    }
+    File(File&&)                 = delete;
+    File& operator=(File&&)      = delete;
     ~File() noexcept
     {
-        if (m_state.fd != -1) {
-            close(m_state.fd);
+        if (m_fd != -1) {
+            close(m_fd);
         }
     }
 
-    explicit operator bool() const noexcept { return m_state.fd != -1; }
-    auto     handle() const noexcept { return m_state.fd; }
-    auto     size() const noexcept { return static_cast<size_t>(m_state.info.st_size); }
-    auto     error() const noexcept { return m_state.error; }
+    explicit operator bool() const noexcept { return m_fd != -1; }
+    auto     handle() const noexcept { return m_fd; }
+    auto     size() const noexcept { return static_cast<size_t>(m_info.st_size); }
+    auto     error() const noexcept { return m_error; }
 
   private:
-    struct {
-        int             fd = -1;
-        struct stat     info {};
-        std::error_code error{};
-    } m_state;
+    int             m_fd = -1;
+    struct stat     m_info {};
+    std::error_code m_error{};
 };
 
-class AsyncReader final {
-  public:
-    AsyncReader(const File& file) : m_state{ file.handle() }
+struct FileReader : Reader {
+    FileReader(const File& file) : m_fd{ file.handle() }
     {
-        assert(m_state.file != -1);
+        assert(m_fd != -1);
 
-        if (auto rc = io_setup(1, &m_state.context); rc < 0) {
-            m_state.error = std::make_error_code(static_cast<std::errc>(-rc));
+        if (auto rc = io_setup(1, &m_context); rc < 0) {
+            m_error = std::make_error_code(static_cast<std::errc>(-rc));
         }
     }
 
-    AsyncReader(const AsyncReader&)            = delete;
-    AsyncReader& operator=(const AsyncReader&) = delete;
-    AsyncReader(AsyncReader&&) noexcept        = delete;
-    AsyncReader& operator=(AsyncReader&&)      = delete;
-    ~AsyncReader() noexcept { io_destroy(m_state.context); }
+    ~FileReader() noexcept override { io_destroy(m_context); }
 
-    auto ReadBlock(size_t offset, size_t size, char* buffer)
+    std::error_code ReadBlock(size_t offset, size_t size, char* buffer) override
     {
         assert(buffer);
-        assert(m_state.file != -1);
+        assert(m_fd != -1);
         assert(std::uintptr_t(buffer) % 4096 == 0);
 
-        io_prep_pread(&m_state.request, m_state.file, buffer, size, static_cast<long long>(offset));
+        io_prep_pread(&m_request, m_fd, buffer, size, static_cast<long long>(offset));
 
-        auto ptr_iocb = &m_state.request;
+        auto ptr_iocb = &m_request;
 
-        auto num_submitted = io_submit(m_state.context, 1, &ptr_iocb);
+        auto num_submitted = io_submit(m_context, 1, &ptr_iocb);
 
         if (num_submitted != 1) {
             auto rc = -num_submitted;
@@ -3821,29 +3825,24 @@ class AsyncReader final {
         return std::error_code();
     }
 
-    auto WaitForResult()
+    ReadResult WaitForResult() override
     {
         auto event = io_event{};
 
-        auto num_events = io_getevents(m_state.context, 1, 1, &event, nullptr);
+        auto num_events = io_getevents(m_context, 1, 1, &event, nullptr);
 
         if (num_events < 1) {
             auto rc = -num_events;
-            return std::make_pair(size_t{}, std::make_error_code(static_cast<std::errc>(rc)));
+            return { size_t{}, std::make_error_code(static_cast<std::errc>(rc)) };
         }
 
-        return std::make_pair(static_cast<size_t>(event.res), std::error_code());
+        return { static_cast<size_t>(event.res), std::error_code() };
     }
 
-    auto Error() const noexcept { return m_state.error; }
-
   private:
-    struct State final {
-        int             file = -1;
-        io_context_t    context{};
-        iocb            request{};
-        std::error_code error{};
-    } m_state;
+    int          m_fd = -1;
+    io_context_t m_context{};
+    iocb         m_request{};
 };
 
 #elif _WIN32
@@ -3863,7 +3862,7 @@ class File final {
     {
         auto filepath_string = filepath.string();
 
-        m_state.handle = CreateFileA(
+        m_handle = CreateFileA(
             filepath_string.c_str(),
             GENERIC_READ,
             0,
@@ -3872,84 +3871,74 @@ class File final {
             FILE_ATTRIBUTE_READONLY | FILE_FLAG_NO_BUFFERING | FILE_FLAG_OVERLAPPED,
             nullptr);
 
-        if (m_state.handle == INVALID_HANDLE_VALUE) {
-            m_state.error = std::error_code(static_cast<int>(GetLastError()), std::system_category());
+        if (m_handle == INVALID_HANDLE_VALUE) {
+            m_error = std::error_code(static_cast<int>(GetLastError()), std::system_category());
             return;
         }
 
         auto size = LARGE_INTEGER{};
-        if (!GetFileSizeEx(m_state.handle, &size)) {
-            m_state.error = std::error_code(static_cast<int>(GetLastError()), std::system_category());
-            Destroy();
+        if (!GetFileSizeEx(m_handle, &size)) {
+            m_error = std::error_code(static_cast<int>(GetLastError()), std::system_category());
+            Close();
             return;
         }
 
-        m_state.size = static_cast<size_t>(size.QuadPart);
+        m_size = static_cast<size_t>(size.QuadPart);
     }
     File(const File&)            = delete;
     File& operator=(const File&) = delete;
-    File(File&& rhs) noexcept { m_state = std::exchange(rhs.m_state, {}); }
-    File& operator=(File&& rhs) noexcept
-    {
-        if (this != &rhs) {
-            m_state = std::exchange(rhs.m_state, {});
-        }
-        return *this;
-    }
-    ~File() noexcept { Destroy(); }
+    File(File&&)                 = delete;
+    File& operator=(File&&)      = delete;
+    ~File() noexcept { Close(); }
 
-    explicit operator bool() const noexcept
-    {
-        return m_state.handle != nullptr && m_state.handle != INVALID_HANDLE_VALUE;
-    }
-    auto handle() const noexcept { return m_state.handle; }
-    auto size() const noexcept { return m_state.size; }
-    auto error() const noexcept { return m_state.error; }
+    explicit operator bool() const noexcept { return m_handle != nullptr && m_handle != INVALID_HANDLE_VALUE; }
+    auto     handle() const noexcept { return m_handle; }
+    auto     size() const noexcept { return m_size; }
+    auto     error() const noexcept { return m_error; }
 
   private:
-    void Destroy() noexcept
+    void Close() noexcept
     {
-        if (m_state.handle != INVALID_HANDLE_VALUE) {
-            CloseHandle(m_state.handle);
-            m_state.handle = INVALID_HANDLE_VALUE;
+        if (m_handle != INVALID_HANDLE_VALUE) {
+            CloseHandle(m_handle);
+            m_handle = INVALID_HANDLE_VALUE;
         }
     }
 
-    struct {
-        HANDLE          handle{};
-        size_t          size{};
-        std::error_code error{};
-    } m_state;
+    HANDLE          m_handle{};
+    size_t          m_size{};
+    std::error_code m_error{};
 };
 
-class AsyncReader final {
-  public:
-    AsyncReader(const File& file)
+struct FileReader : Reader {
+    FileReader(const File& file)
     {
-        m_state.handle = CreateEventA(nullptr, FALSE, FALSE, nullptr);
+        m_handle = CreateEventA(nullptr, FALSE, FALSE, nullptr);
 
-        if (m_state.handle == INVALID_HANDLE_VALUE) {
-            m_state.error = std::error_code(static_cast<int>(GetLastError()), std::system_category());
+        if (m_handle == INVALID_HANDLE_VALUE) {
+            m_error = std::error_code(static_cast<int>(GetLastError()), std::system_category());
         }
 
-        m_state.file = file.handle();
+        m_file = file.handle();
     }
-    AsyncReader(const AsyncReader&)            = delete;
-    AsyncReader& operator=(const AsyncReader&) = delete;
-    AsyncReader(AsyncReader&&)                 = delete;
-    AsyncReader& operator=(AsyncReader&&)      = delete;
-    ~AsyncReader() noexcept { Destroy(); }
 
-    auto ReadBlock(size_t offset, size_t size, char* buffer)
+    ~FileReader() noexcept override
     {
-        assert(m_state.handle && m_state.handle != INVALID_HANDLE_VALUE);
-        assert(m_state.file && m_state.file != INVALID_HANDLE_VALUE);
+        if (m_handle != INVALID_HANDLE_VALUE) {
+            CloseHandle(m_handle);
+        }
+    }
 
-        m_state.overlapped.hEvent     = m_state.handle;
-        m_state.overlapped.Offset     = static_cast<DWORD>(offset);
-        m_state.overlapped.OffsetHigh = static_cast<DWORD>(offset >> 32);
+    std::error_code ReadBlock(size_t offset, size_t size, char* buffer) override
+    {
+        assert(m_handle && m_handle != INVALID_HANDLE_VALUE);
+        assert(m_file && m_file != INVALID_HANDLE_VALUE);
 
-        auto success = ReadFile(m_state.file, buffer, static_cast<DWORD>(size), nullptr, &m_state.overlapped);
+        m_overlapped.hEvent     = m_handle;
+        m_overlapped.Offset     = static_cast<DWORD>(offset);
+        m_overlapped.OffsetHigh = static_cast<DWORD>(offset >> 32);
+
+        auto success = ReadFile(m_file, buffer, static_cast<DWORD>(size), nullptr, &m_overlapped);
 
         auto error = success ? ERROR_SUCCESS : static_cast<int>(GetLastError());
 
@@ -3960,43 +3949,30 @@ class AsyncReader final {
         return std::error_code(error, std::system_category());
     }
 
-    auto WaitForResult()
+    ReadResult WaitForResult() override
     {
-        assert(m_state.handle && m_state.handle != INVALID_HANDLE_VALUE);
-        assert(m_state.file && m_state.file != INVALID_HANDLE_VALUE);
+        assert(m_handle && m_handle != INVALID_HANDLE_VALUE);
+        assert(m_file && m_file != INVALID_HANDLE_VALUE);
 
         auto bytes_read = DWORD{};
 
-        if (GetOverlappedResult(m_state.handle, &m_state.overlapped, &bytes_read, TRUE)) {
-            return std::make_pair(static_cast<std::size_t>(bytes_read), std::error_code());
+        if (GetOverlappedResult(m_handle, &m_overlapped, &bytes_read, TRUE)) {
+            return { static_cast<std::size_t>(bytes_read), std::error_code() };
         }
 
         auto error = static_cast<int>(GetLastError());
 
         if (error == ERROR_HANDLE_EOF) {
-            return std::make_pair(static_cast<std::size_t>(bytes_read), std::error_code());
+            return { static_cast<std::size_t>(bytes_read), std::error_code() };
         }
 
-        return std::make_pair(std::size_t{}, std::error_code(error, std::system_category()));
+        return { std::size_t{}, std::error_code(error, std::system_category()) };
     }
-
-    auto Error() const noexcept { return m_state.error; }
 
   private:
-    void Destroy() noexcept
-    {
-        if (m_state.handle != INVALID_HANDLE_VALUE) {
-            CloseHandle(m_state.handle);
-            m_state.handle = INVALID_HANDLE_VALUE;
-        }
-    }
-
-    struct {
-        HANDLE          handle{};
-        HANDLE          file{};
-        OVERLAPPED      overlapped{};
-        std::error_code error{};
-    } m_state;
+    HANDLE     m_handle{};
+    HANDLE     m_file{};
+    OVERLAPPED m_overlapped{};
 };
 
 #elif __APPLE__
@@ -4016,63 +3992,48 @@ class File final {
     {
         auto filepath_string = filepath.string();
 
-        if (-1 == stat(filepath_string.c_str(), &m_state.info)) {
-            m_state.error = std::error_code(errno, std::system_category());
+        if (-1 == stat(filepath_string.c_str(), &m_info)) {
+            m_error = std::error_code(errno, std::system_category());
             return;
         }
 
-        m_state.fd = open(filepath_string.c_str(), O_RDONLY);
+        m_fd = open(filepath_string.c_str(), O_RDONLY);
 
-        if (-1 == m_state.fd) {
-            m_state.error = std::error_code(errno, std::system_category());
+        if (-1 == m_fd) {
+            m_error = std::error_code(errno, std::system_category());
         }
     }
-    File(const File&) = delete;
+    File(const File&)            = delete;
     File& operator=(const File&) = delete;
-    File(File&& rhs) noexcept { m_state = std::exchange(rhs.m_state, {}); }
-    File& operator=(File&& rhs) noexcept
-    {
-        if (this != &rhs) {
-            m_state = std::exchange(rhs.m_state, {});
-        }
-        return *this;
-    }
+    File(File&&)                 = delete;
+    File& operator=(File&&)      = delete;
     ~File() noexcept
     {
-        if (m_state.fd != -1) {
-            close(m_state.fd);
+        if (m_fd != -1) {
+            close(m_fd);
         }
     }
 
-    explicit operator bool() const noexcept { return m_state.fd != -1; }
-    auto handle() const noexcept { return m_state.fd; }
-    auto size() const noexcept { return static_cast<size_t>(m_state.info.st_size); }
-    auto error() const noexcept { return m_state.error; }
+    explicit operator bool() const noexcept { return m_fd != -1; }
+    auto handle() const noexcept { return m_fd; }
+    auto size() const noexcept { return static_cast<size_t>(m_info.st_size); }
+    auto error() const noexcept { return m_error; }
 
   private:
-    struct {
-        int fd = -1;
-        struct stat info {};
-        std::error_code error{};
-    } m_state;
+    int             m_fd = -1;
+    struct stat     m_info {};
+    std::error_code m_error{};
 };
 
-struct ReadRequest final {
-    off_t offset{};
-    size_t size{};
-    char* buffer{};
-};
-
-class AsyncReader final {
-  public:
-    AsyncReader(const File& file) noexcept : m_fd{ file.handle() }
+struct FileReader : Reader {
+    FileReader(const File& file) noexcept : m_fd{ file.handle() }
     {
         assert(m_fd != -1);
 
         fcntl(m_fd, F_NOCACHE, 1);
     }
 
-    auto ReadBlock(size_t offset, size_t size, char* buffer)
+    std::error_code ReadBlock(size_t offset, size_t size, char* buffer) override
     {
         assert(buffer);
         assert(std::uintptr_t(buffer) % 4096 == 0);
@@ -4092,24 +4053,26 @@ class AsyncReader final {
         return std::error_code();
     }
 
-    auto WaitForResult()
+    ReadResult WaitForResult() override
     {
         auto n_bytes_read = pread(m_fd, m_request.buffer, m_request.size, m_request.offset);
 
         if (n_bytes_read == -1) {
-            return std::make_pair(size_t{}, std::error_code(errno, std::system_category()));
+            return { size_t{}, std::error_code(errno, std::system_category()) };
         }
 
-        return std::make_pair(static_cast<size_t>(n_bytes_read), std::error_code());
+        return { static_cast<size_t>(n_bytes_read), std::error_code() };
     }
 
-    auto Error() const noexcept { return m_error; }
-
   private:
-    inline static thread_local ReadRequest m_request{};
+    struct ReadRequest final {
+      off_t  offset{};
+      size_t size{};
+      char*  buffer{};
+    };
 
-    int m_fd = -1;
-    std::error_code m_error{};
+    int         m_fd = -1;
+    ReadRequest m_request{};
 };
 
 #endif
@@ -5415,13 +5378,13 @@ inline rapidobj_errc ProcessLine(std::string_view line, Chunk* chunk, SharedCont
 }
 
 inline void ProcessBlocksImpl(
-    sys::AsyncReader* reader,
-    size_t            block_begin,
-    size_t            block_end,
-    size_t            bytes_per_block,
-    bool              stop_parsing_after_eol,
-    Chunk*            chunk,
-    SharedContext*    context)
+    Reader*        reader,
+    size_t         block_begin,
+    size_t         block_end,
+    size_t         bytes_per_block,
+    bool           stop_parsing_after_eol,
+    Chunk*         chunk,
+    SharedContext* context)
 {
     assert(reader);
 
@@ -5565,7 +5528,7 @@ inline void ProcessBlocks(
     assert(block_begin < block_end);
     assert(bytes_per_block > 0);
 
-    auto reader = sys::AsyncReader(*file);
+    auto reader = sys::FileReader(*file);
 
     if (reader.Error()) {
         chunk->error = Error{ reader.Error() };
