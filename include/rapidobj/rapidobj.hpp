@@ -4038,7 +4038,9 @@ struct FileReader : Reader {
         assert(buffer);
         assert(std::uintptr_t(buffer) % 4096 == 0);
 
-        m_request = ReadRequest{ static_cast<off_t>(offset), size, buffer };
+        m_offset = offset;
+        m_size = size;
+        m_buffer = buffer;
 
         radvisory args{};
         args.ra_offset = static_cast<off_t>(offset);
@@ -4055,7 +4057,7 @@ struct FileReader : Reader {
 
     ReadResult WaitForResult() override
     {
-        auto n_bytes_read = pread(m_fd, m_request.buffer, m_request.size, m_request.offset);
+        auto n_bytes_read = pread(m_fd, m_buffer, m_size, m_offset);
 
         if (n_bytes_read == -1) {
             return { size_t{}, std::error_code(errno, std::system_category()) };
@@ -4065,14 +4067,10 @@ struct FileReader : Reader {
     }
 
   private:
-    struct ReadRequest final {
-      off_t  offset{};
-      size_t size{};
-      char*  buffer{};
-    };
-
-    int         m_fd = -1;
-    ReadRequest m_request{};
+    int m_fd = -1;
+    off_t m_offset{};
+    size_t m_size{};
+    char* m_buffer{};
 };
 
 #endif
@@ -5389,6 +5387,7 @@ inline void ProcessBlocksImpl(
     assert(reader);
 
     bool begin_parsing_after_eol = block_begin > 0;
+    bool reached_eof             = false;
 
     auto buffer_size = kMaxLineLength + bytes_per_block;
     auto buffer1     = std::unique_ptr<char, sys::AlignedDeleter>(sys::AlignedAllocate(buffer_size, 4_KiB));
@@ -5411,7 +5410,8 @@ inline void ProcessBlocksImpl(
         chunk->error = Error{ ec };
         return;
     } else {
-        text = std::string_view(front_buffer + kMaxLineLength, bytes_read);
+        reached_eof = bytes_read < bytes_per_block;
+        text        = std::string_view(front_buffer + kMaxLineLength, bytes_read);
     }
 
     if (begin_parsing_after_eol) {
@@ -5429,7 +5429,7 @@ inline void ProcessBlocksImpl(
     for (size_t i = block_begin; i != block_end; ++i) {
         auto remainder = size_t{};
 
-        bool last_block = i + 1 == block_end;
+        bool last_block = (i + 1 == block_end) || reached_eof;
 
         if (!last_block) {
             file_offset = (i + 1) * bytes_per_block;
@@ -5506,9 +5506,11 @@ inline void ProcessBlocksImpl(
                 chunk->error = Error{ ec };
                 return;
             }
-
+            reached_eof = bytes_read < bytes_per_block;
             std::swap(front_buffer, back_buffer);
             text = std::string_view(front_buffer + kMaxLineLength - remainder, bytes_read + remainder);
+        } else if (reached_eof) {
+            break;
         }
     }
 }
