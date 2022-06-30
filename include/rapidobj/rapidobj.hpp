@@ -4038,7 +4038,9 @@ struct FileReader : Reader {
         assert(buffer);
         assert(std::uintptr_t(buffer) % 4096 == 0);
 
-        m_request = ReadRequest{ static_cast<off_t>(offset), size, buffer };
+        m_offset = offset;
+        m_size   = size;
+        m_buffer = buffer;
 
         radvisory args{};
         args.ra_offset = static_cast<off_t>(offset);
@@ -4055,7 +4057,7 @@ struct FileReader : Reader {
 
     ReadResult WaitForResult() override
     {
-        auto n_bytes_read = pread(m_fd, m_request.buffer, m_request.size, m_request.offset);
+        auto n_bytes_read = pread(m_fd, m_buffer, m_size, m_offset);
 
         if (n_bytes_read == -1) {
             return { size_t{}, std::error_code(errno, std::system_category()) };
@@ -4065,14 +4067,10 @@ struct FileReader : Reader {
     }
 
   private:
-    struct ReadRequest final {
-      off_t  offset{};
-      size_t size{};
-      char*  buffer{};
-    };
-
-    int         m_fd = -1;
-    ReadRequest m_request{};
+    int    m_fd = -1;
+    off_t  m_offset{};
+    size_t m_size{};
+    char*  m_buffer{};
 };
 
 #endif
@@ -4144,6 +4142,7 @@ inline auto ParseFace(
     size_t               normal_count,
     size_t               min_count,
     size_t               max_count,
+    OffsetFlags          permitted_flags,
     Buffer<Index>*       indices,
     Buffer<OffsetFlags>* offset_flags)
 {
@@ -4181,8 +4180,12 @@ inline auto ParseFace(
             } else {
                 return make_pair(size_t{ 0 }, rapidobj_errc::IndexOutOfBoundsError);
             }
-            indices->push_back({ value, -1, -1 });
-            ++count;
+            if (permitted_flags & ApplyOffset::Position) {
+                indices->push_back({ value, -1, -1 });
+                ++count;
+            } else {
+                return make_pair(size_t{ 0 }, rapidobj_errc::ParseError);
+            }
         }
 
         // exit if there is nothing left to process
@@ -4213,7 +4216,11 @@ inline auto ParseFace(
                 } else {
                     return make_pair(size_t{ 0 }, rapidobj_errc::IndexOutOfBoundsError);
                 }
-                indices->back().texcoord_index = value;
+                if (permitted_flags & ApplyOffset::Texcoord) {
+                    indices->back().texcoord_index = value;
+                } else {
+                    return make_pair(size_t{ 0 }, rapidobj_errc::ParseError);
+                }
             }
         }
 
@@ -4245,7 +4252,11 @@ inline auto ParseFace(
             } else {
                 return make_pair(size_t{ 0 }, rapidobj_errc::IndexOutOfBoundsError);
             }
-            indices->back().normal_index = value;
+            if (permitted_flags & ApplyOffset::Normal) {
+                indices->back().normal_index = value;
+            } else {
+                return make_pair(size_t{ 0 }, rapidobj_errc::ParseError);
+            }
         }
     }
 
@@ -5260,6 +5271,7 @@ inline rapidobj_errc ProcessLine(std::string_view line, Chunk* chunk, SharedCont
                 chunk->normals.count,
                 kMinVerticesInFace,
                 kMaxVerticesInFace,
+                static_cast<OffsetFlags>(ApplyOffset::All),
                 &chunk->mesh.indices.buffer,
                 &chunk->mesh.indices.flags);
             if (rc != rapidobj_errc::Success) {
@@ -5358,6 +5370,7 @@ inline rapidobj_errc ProcessLine(std::string_view line, Chunk* chunk, SharedCont
                 chunk->normals.count,
                 kMinVerticesInLine,
                 kMaxVerticesInLine,
+                static_cast<OffsetFlags>(ApplyOffset::Position | ApplyOffset::Texcoord),
                 &chunk->lines.indices.buffer,
                 &chunk->lines.indices.flags);
             if (rc != rapidobj_errc::Success) {

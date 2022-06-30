@@ -13,11 +13,15 @@ bool operator==(rapidobj::detail::OffsetFlags lhs, const rapidobj::detail::Apply
     return lhs == static_cast<rapidobj::detail::OffsetFlags>(rhs);
 }
 
+using namespace rapidobj;
+using namespace rapidobj::detail;
+
+static const auto kAllowPosition           = static_cast<OffsetFlags>(ApplyOffset::Position);
+static const auto kAllowPositionAndTexture = static_cast<OffsetFlags>(ApplyOffset::Position | ApplyOffset::Texcoord);
+static const auto kAllowAll                = static_cast<OffsetFlags>(ApplyOffset::All);
+
 TEST_CASE("rapidobj::detail::ParseReals")
 {
-    using namespace rapidobj;
-    using namespace rapidobj::detail;
-
     auto floats = std::array<float, 3>{};
 
     {
@@ -116,15 +120,12 @@ TEST_CASE("rapidobj::detail::ParseReals")
 
 TEST_CASE("rapidobj::detail::ParseFace")
 {
-    using namespace rapidobj;
-    using namespace rapidobj::detail;
-
     auto indices = Buffer<Index>();
     auto flags   = Buffer<OffsetFlags>();
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("1 2 3", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("1 2 3", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -140,7 +141,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("1 2 3 4", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("1 2 3 4", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 4);
         CHECK(ec == rapidobj_errc());
@@ -173,6 +174,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
             0,
             3,
             255,
+            kAllowAll,
             &indices,
             &flags);
 
@@ -188,7 +190,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("-42 -43 -44", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("-42 -43 -44", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -204,7 +206,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("-42 -43 -44", 42, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("-42 -43 -44", 42, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -220,7 +222,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace(" 42   43\t44  ", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace(" 42   43\t44  ", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -236,7 +238,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("1\t1\t1", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("1\t1\t1", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -252,7 +254,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("42/43 44/45 46/47", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("42/43 44/45 46/47", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -268,7 +270,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("42/43 44/45 46/47 48/49", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("42/43 44/45 46/47 48/49", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 4);
         CHECK(ec == rapidobj_errc());
@@ -286,7 +288,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("-42/42 1/1 2/2", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("-42/42 1/1 2/2", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -302,7 +304,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("42/-42 1/-1 2/-2", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("42/-42 1/-1 2/-2", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -318,7 +320,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("-42/-42 -43/-43 -44/-44", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("-42/-42 -43/-43 -44/-44", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -334,7 +336,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("1/2/3 4/5/6 7/8/9", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("1/2/3 4/5/6 7/8/9", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -350,7 +352,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("1/2/3 4/5/6 7/8/9 10/11/12", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("1/2/3 4/5/6 7/8/9 10/11/12", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 4);
         CHECK(ec == rapidobj_errc());
@@ -368,7 +370,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("1/2/-1 3/4/-2 5/6/-3", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("1/2/-1 3/4/-2 5/6/-3", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -384,7 +386,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("1/-2/3 4/-5/6 7/-8/9", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("1/-2/3 4/-5/6 7/-8/9", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -400,7 +402,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("2/-3/-4 5/-6/-7 8/-9/-10", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("2/-3/-4 5/-6/-7 8/-9/-10", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -416,7 +418,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("\t-2/3/4\t-5/6/7\t-8/9/9\t", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("\t-2/3/4\t-5/6/7\t-8/9/9\t", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -432,7 +434,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("-2/3/-4   -5/6/-7   -8/9/-9", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("-2/3/-4   -5/6/-7   -8/9/-9", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -448,7 +450,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("-2/-3/4 -5/-6/7 -8/-9/10", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("-2/-3/4 -5/-6/7 -8/-9/10", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -464,7 +466,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("-2/-3/-4 -5/-6/-7 -8/-9/-1", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("-2/-3/-4 -5/-6/-7 -8/-9/-1", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -480,7 +482,8 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("-12/-13/-14 -15/-16/-17 -18/-19/-11", 10, 10, 10, 3, 255, &indices, &flags);
+        auto [count, ec] =
+            ParseFace("-12/-13/-14 -15/-16/-17 -18/-19/-11", 10, 10, 10, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -496,7 +499,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("2//3 4//5 6//7", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("2//3 4//5 6//7", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -512,7 +515,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("2//3 4//5 6//7 8//9", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("2//3 4//5 6//7 8//9", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 4);
         CHECK(ec == rapidobj_errc());
@@ -530,7 +533,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("2//-3 4//-5 6//-7", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("2//-3 4//-5 6//-7", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -546,7 +549,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("-2//3 -4//5 -6//7", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("-2//3 -4//5 -6//7", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -562,7 +565,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("-2//-3 -4//-5 -6//-7", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("-2//-3 -4//-5 -6//-7", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 3);
         CHECK(ec == rapidobj_errc());
@@ -578,7 +581,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::TooFewIndicesError);
@@ -586,7 +589,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace(" ", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace(" ", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::TooFewIndicesError);
@@ -594,7 +597,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("1", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("1", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::TooFewIndicesError);
@@ -602,7 +605,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("1 2", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("1 2", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::TooFewIndicesError);
@@ -610,7 +613,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("1 2 3 0", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("1 2 3 0", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::IndexOutOfBoundsError);
@@ -633,6 +636,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
             0,
             3,
             255,
+            kAllowAll,
             &indices,
             &flags);
 
@@ -642,7 +646,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("/", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("/", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::ParseError);
@@ -650,7 +654,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace(" / ", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace(" / ", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::ParseError);
@@ -658,7 +662,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("//", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("//", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::ParseError);
@@ -666,7 +670,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("/42", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("/42", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::ParseError);
@@ -674,7 +678,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("42/", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("42/", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::ParseError);
@@ -682,7 +686,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("42//", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("42//", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::ParseError);
@@ -690,7 +694,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("42/?/52", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("42/?/52", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::ParseError);
@@ -698,7 +702,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("42///52", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("42///52", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::ParseError);
@@ -706,7 +710,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("?", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("?", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::ParseError);
@@ -714,7 +718,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("? 41", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("? 41", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::ParseError);
@@ -722,7 +726,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("41?", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("41?", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::ParseError);
@@ -730,7 +734,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("4?1", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("4?1", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::ParseError);
@@ -738,7 +742,7 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("41 ?", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("41 ?", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::ParseError);
@@ -746,7 +750,71 @@ TEST_CASE("rapidobj::detail::ParseFace")
 
     SUBCASE("")
     {
-        auto [count, ec] = ParseFace("1 2 3?", 0, 0, 0, 3, 255, &indices, &flags);
+        auto [count, ec] = ParseFace("1 2 3?", 0, 0, 0, 3, 255, kAllowAll, &indices, &flags);
+
+        CHECK(count == 0);
+        CHECK(ec == rapidobj_errc::ParseError);
+    }
+
+    SUBCASE("")
+    {
+        auto [count, ec] = ParseFace("1 2", 0, 0, 0, 2, 255, kAllowPosition, &indices, &flags);
+
+        CHECK(count == 2);
+        CHECK(ec == rapidobj_errc());
+    }
+
+    SUBCASE("")
+    {
+        auto [count, ec] = ParseFace("1/1 2/2", 0, 0, 0, 2, 255, kAllowPosition, &indices, &flags);
+
+        CHECK(count == 0);
+        CHECK(ec == rapidobj_errc::ParseError);
+    }
+
+    SUBCASE("")
+    {
+        auto [count, ec] = ParseFace("1/1/1 2/2/2", 0, 0, 0, 2, 255, kAllowPosition, &indices, &flags);
+
+        CHECK(count == 0);
+        CHECK(ec == rapidobj_errc::ParseError);
+    }
+
+    SUBCASE("")
+    {
+        auto [count, ec] = ParseFace("1//1 2//2", 0, 0, 0, 2, 255, kAllowPosition, &indices, &flags);
+
+        CHECK(count == 0);
+        CHECK(ec == rapidobj_errc::ParseError);
+    }
+
+    SUBCASE("")
+    {
+        auto [count, ec] = ParseFace("1 2", 0, 0, 0, 2, 255, kAllowPositionAndTexture, &indices, &flags);
+
+        CHECK(count == 2);
+        CHECK(ec == rapidobj_errc());
+    }
+
+    SUBCASE("")
+    {
+        auto [count, ec] = ParseFace("1/1 2/2", 0, 0, 0, 2, 255, kAllowPositionAndTexture, &indices, &flags);
+
+        CHECK(count == 2);
+        CHECK(ec == rapidobj_errc());
+    }
+
+    SUBCASE("")
+    {
+        auto [count, ec] = ParseFace("1/1/1 2/2/2", 0, 0, 0, 2, 255, kAllowPositionAndTexture, &indices, &flags);
+
+        CHECK(count == 0);
+        CHECK(ec == rapidobj_errc::ParseError);
+    }
+
+    SUBCASE("")
+    {
+        auto [count, ec] = ParseFace("1//1 2//2", 0, 0, 0, 2, 255, kAllowPositionAndTexture, &indices, &flags);
 
         CHECK(count == 0);
         CHECK(ec == rapidobj_errc::ParseError);
