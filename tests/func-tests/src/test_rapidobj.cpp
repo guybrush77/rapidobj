@@ -29,7 +29,9 @@ TEST_CASE("cube")
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.IsParseFileEqualToReference());
+
+    CHECK(test.IsParseStreamEqualToReference());
 }
 
 TEST_CASE("cube-triangulated")
@@ -38,7 +40,9 @@ TEST_CASE("cube-triangulated")
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.IsParseFileEqualToReference());
+
+    CHECK(test.IsParseStreamEqualToReference());
 }
 
 TEST_CASE("mario")
@@ -47,7 +51,7 @@ TEST_CASE("mario")
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.IsParseFileEqualToReference());
 }
 
 TEST_CASE("mario-triangulated")
@@ -56,7 +60,7 @@ TEST_CASE("mario-triangulated")
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.IsParseFileEqualToReference());
 }
 
 TEST_CASE("sponza")
@@ -65,7 +69,7 @@ TEST_CASE("sponza")
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.IsParseFileEqualToReference());
 }
 
 TEST_CASE("sponza-triangulated")
@@ -74,7 +78,7 @@ TEST_CASE("sponza-triangulated")
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.IsParseFileEqualToReference());
 }
 
 TEST_CASE("teapot")
@@ -83,7 +87,9 @@ TEST_CASE("teapot")
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.IsParseFileEqualToReference());
+
+    CHECK(test.IsParseStreamEqualToReference());
 }
 
 TEST_CASE("teapot-triangulated")
@@ -92,5 +98,7 @@ TEST_CASE("teapot-triangulated")
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.IsParseFileEqualToReference());
+
+    CHECK(test.IsParseStreamEqualToReference());
 }

@@ -12,7 +12,9 @@ class ParseTest final {
 
     bool IsTestValid() const;
 
-    bool IsEqualToReference() const;
+    bool IsParseFileEqualToReference() const;
+
+    bool IsParseStreamEqualToReference() const;
 
   private:
     std::filesystem::path m_test_file;

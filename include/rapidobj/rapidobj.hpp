@@ -287,6 +287,8 @@ struct [[nodiscard]] Result final {
 
 inline Result ParseFile(const std::filesystem::path& obj_filepath, const std::filesystem::path& mtl_filepath = {});
 
+inline Result ParseStream(std::istream& obj_stream);
+
 inline bool Triangulate(Result& result);
 
 } // namespace rapidobj
@@ -4077,6 +4079,62 @@ struct FileReader : Reader {
 
 } // namespace sys
 
+using DataSource = std::variant<sys::File*, std::istream*>;
+
+struct StreamReader : Reader {
+    StreamReader(std::istream* is) noexcept : m_stream(is)
+    {
+        assert(is);
+
+        if (!is->good()) {
+            m_error = std::make_error_code(std::io_errc::stream);
+        }
+    }
+
+    std::error_code ReadBlock(size_t offset, size_t size, char* buffer) override
+    {
+        assert(buffer);
+
+        m_offset = offset;
+        m_size   = size;
+        m_buffer = buffer;
+
+        return std::error_code();
+    }
+
+    ReadResult WaitForResult() override
+    {
+        if (!m_stream->read(m_buffer, m_size)) {
+            if (m_stream->eof()) {
+                return { static_cast<size_t>(m_stream->gcount()), std::error_code() };
+            }
+            return { size_t{}, std::make_error_code(std::io_errc::stream) };
+        }
+        return { static_cast<size_t>(m_stream->gcount()), std::error_code() };
+    }
+
+  private:
+    std::istream* m_stream{};
+    size_t        m_offset{};
+    size_t        m_size{};
+    char*         m_buffer{};
+};
+
+inline std::unique_ptr<Reader> CreateReader(sys::File* file)
+{
+    return std::make_unique<sys::FileReader>(*file);
+}
+
+inline std::unique_ptr<Reader> CreateReader(std::istream* is)
+{
+    return std::make_unique<StreamReader>(is);
+}
+
+inline std::unique_ptr<Reader> CreateReader(DataSource source)
+{
+    return std::visit([](auto arg) { return CreateReader(arg); }, source);
+}
+
 inline size_t ParseReals(std::string_view text, size_t max_count, float* out)
 {
     auto count = size_t{};
@@ -5516,7 +5574,7 @@ inline void ProcessBlocksImpl(
 }
 
 inline void ProcessBlocks(
-    sys::File*     file,
+    DataSource     source,
     size_t         block_begin,
     size_t         block_end,
     size_t         bytes_per_block,
@@ -5524,18 +5582,24 @@ inline void ProcessBlocks(
     Chunk*         chunk,
     SharedContext* context)
 {
-    assert(file);
     assert(chunk);
     assert(context);
     assert(block_begin < block_end);
     assert(bytes_per_block > 0);
 
-    auto reader = sys::FileReader(*file);
+    auto reader = CreateReader(source);
 
-    if (reader.Error()) {
-        chunk->error = Error{ reader.Error() };
+    if (reader->Error()) {
+        chunk->error = Error{ reader->Error() };
     } else {
-        ProcessBlocksImpl(&reader, block_begin, block_end, bytes_per_block, stop_parsing_after_eol, chunk, context);
+        ProcessBlocksImpl(
+            reader.get(),
+            block_begin,
+            block_end,
+            bytes_per_block,
+            stop_parsing_after_eol,
+            chunk,
+            context);
     }
 
     if (1 == std::atomic_fetch_sub(&context->parsing.thread_count, size_t(1))) {
@@ -5550,15 +5614,18 @@ inline void ParseFileSequential(sys::File* file, std::vector<Chunk>* chunks, Sha
 
     chunks->resize(1);
 
+    auto source = DataSource(file);
+
     auto num_blocks             = file->size() / kBlockSize + (file->size() % kBlockSize != 0);
     auto stop_parsing_after_eol = false;
     auto chunk                  = &chunks->front();
 
-    ProcessBlocks(file, 0, num_blocks, kBlockSize, stop_parsing_after_eol, chunk, context);
+    ProcessBlocks(source, 0, num_blocks, kBlockSize, stop_parsing_after_eol, chunk, context);
 }
 
 inline void ParseFileParallel(sys::File* file, std::vector<Chunk>* chunks, SharedContext* context)
 {
+    auto source                = DataSource(file);
     auto num_blocks            = file->size() / kBlockSize + (file->size() % kBlockSize != 0);
     auto num_threads           = std::thread::hardware_concurrency();
     auto num_blocks_per_thread = num_blocks / num_threads;
@@ -5600,7 +5667,7 @@ inline void ParseFileParallel(sys::File* file, std::vector<Chunk>* chunks, Share
         bool stop_parsing_after_eol = !is_last;
         auto chunk                  = &(*chunks)[i];
 
-        threads.emplace_back(ProcessBlocks, file, begin, end, kBlockSize, stop_parsing_after_eol, chunk, context);
+        threads.emplace_back(ProcessBlocks, source, begin, end, kBlockSize, stop_parsing_after_eol, chunk, context);
         threads.back().detach();
     }
 
@@ -5659,6 +5726,28 @@ inline Result ParseFile(const std::filesystem::path& filepath, const std::filesy
     }
 
     return result;
+}
+
+inline Result ParseStream(std::istream& is)
+{
+    auto context = SharedContext{};
+
+    context.thread.concurrency   = 1;
+    context.parsing.thread_count = 1;
+
+    auto chunks                 = std::vector<Chunk>(1);
+    auto source                 = DataSource(&is);
+    auto num_blocks             = std::numeric_limits<size_t>::max();
+    auto stop_parsing_after_eol = false;
+    auto chunk                  = &chunks.front();
+
+    ProcessBlocks(source, 0, num_blocks, kBlockSize, stop_parsing_after_eol, chunk, &context);
+
+    if (chunks.front().error.code) {
+        return Result{ Attributes{}, Shapes{}, Materials{}, chunks.front().error };
+    }
+
+    return Merge(chunks, &context);
 }
 
 struct TriangulateTask final {
@@ -6052,6 +6141,16 @@ inline bool Triangulate(Result& result)
 inline Result ParseFile(const std::filesystem::path& obj_filepath, const std::filesystem::path& mtl_filepath)
 {
     return detail::ParseFile(obj_filepath, mtl_filepath);
+}
+
+/// <summary>
+/// Loads and parses Wavefront geometry definition file (.obj file).
+/// </summary>
+/// <param name="obj_stream">- Path to the .obj std::istream to parse.</param>
+/// <returns>Parsed data stored in Result class.</returns>
+inline Result ParseStream(std::istream& obj_stream)
+{
+    return detail::ParseStream(obj_stream);
 }
 
 inline bool Triangulate(Result& result)
