@@ -165,9 +165,14 @@ bool operator==(const rapidobj::Lines& lhs, const tinyobj::lines_t& rhs)
     return lhs.indices == rhs.indices && lhs.num_line_vertices == rhs.num_line_vertices;
 }
 
+bool operator==(const rapidobj::Points& lhs, const tinyobj::points_t& rhs)
+{
+    return lhs.indices == rhs.indices;
+}
+
 bool operator==(const rapidobj::Shape& lhs, const tinyobj::shape_t& rhs)
 {
-    return lhs.name == rhs.name && lhs.mesh == rhs.mesh && lhs.lines == rhs.lines;
+    return lhs.name == rhs.name && lhs.mesh == rhs.mesh && lhs.lines == rhs.lines && lhs.points == rhs.points;
 }
 
 template <typename R, typename RA, typename T, typename TA>
@@ -230,7 +235,7 @@ void PrintDifferences(T lhs, size_t lhs_size, U rhs, size_t rhs_size)
                 break;
             }
         }
-        ++lhs, ++rhs, --size;
+        ++lhs, ++rhs;
     }
     cout << "    }\n";
 }
@@ -284,13 +289,16 @@ void PrintDifferences(
         bool lines_indices_equal = Compare("", lhs->lines.indices, rhs->lines.indices, Silent::True);
         bool lines_num_line_vertices =
             Compare("", lhs->lines.num_line_vertices, rhs->lines.num_line_vertices, Silent::True);
+        bool points_indices_equal = Compare("", lhs->points.indices, rhs->points.indices, Silent::True);
 
         auto mesh_equal = mesh_indices_equal && mesh_num_face_vertices_equal && mesh_material_ids_equal &&
                           mesh_smoothing_group_ids_equal;
 
         auto lines_equal = lines_indices_equal && lines_num_line_vertices;
 
-        if (names_equal && mesh_equal && lines_equal) {
+        auto points_equal = points_indices_equal;
+
+        if (names_equal && mesh_equal && lines_equal && points_equal) {
             ++lhs, ++rhs;
             continue;
         }
@@ -338,6 +346,14 @@ void PrintDifferences(
                 lhs->lines.num_line_vertices,
                 rhs->lines.num_line_vertices,
                 Silent::False);
+        }
+
+        if (points_equal) {
+            std::cout << "  Points:                Equal\n";
+        } else {
+            std::cout << "  Points:                Not Equal\n\n";
+
+            Compare("    Indices:             ", lhs->points.indices, rhs->points.indices, Silent::False);
         }
 
         ++lhs, ++rhs;

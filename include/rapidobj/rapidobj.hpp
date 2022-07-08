@@ -180,15 +180,20 @@ struct Mesh final {
     Array<uint32_t> smoothing_group_ids; // Smoothing group ID per face (group id 0 means off)
 };
 
-struct Lines {
+struct Lines final {
     Array<Index>   indices;           // Polyline indices
     Array<int32_t> num_line_vertices; // Number of vertices per polyline
 };
 
-struct Shape {
+struct Points final {
+    Array<Index> indices; // Points indices
+};
+
+struct Shape final {
     std::string name;
     Mesh        mesh;
     Lines       lines;
+    Points      points;
 };
 
 using Shapes = std::vector<Shape>;
@@ -3205,6 +3210,8 @@ static constexpr auto kMinVerticesInFace  = 3;
 static constexpr auto kMaxVerticesInFace  = 255;
 static constexpr auto kMinVerticesInLine  = 2;
 static constexpr auto kMaxVerticesInLine  = 1000;
+static constexpr auto kMinVerticesInPoint = 1;
+static constexpr auto kMaxVerticesInPoint = 1000;
 static constexpr auto kSingleThreadCutoff = 1_MiB;
 
 static constexpr auto kMergeCopyByteCost  = 12;
@@ -3358,9 +3365,13 @@ struct ShapeRecord final {
         size_t index_buffer_start{};
         size_t segment_buffer_start{};
     };
+    struct Points final {
+        size_t index_buffer_start{};
+    };
     std::string name{};
     Mesh        mesh{};
     Lines       lines{};
+    Points      points{};
     size_t      chunk_index{};
 };
 
@@ -3453,6 +3464,12 @@ struct Chunk final {
             size_t      count;
         } segments{};
     };
+    struct Points final {
+        struct Indices final {
+            Buffer<Index>       buffer;
+            Buffer<OffsetFlags> flags;
+        } indices{};
+    };
     struct Shapes final {
         std::vector<ShapeRecord> list;
     };
@@ -3469,6 +3486,7 @@ struct Chunk final {
     Normals   normals;
     Mesh      mesh;
     Lines     lines;
+    Points    points;
     Shapes    shapes;
     Materials materials;
     Smoothing smoothing;
@@ -3488,6 +3506,8 @@ inline size_t SizeInBytes(const Chunk& chunk) noexcept
     size += chunk.lines.indices.buffer.size() * sizeof(Index);
     size += chunk.lines.indices.flags.size() * sizeof(OffsetFlags);
     size += chunk.lines.segments.buffer.size() * sizeof(int);
+    size += chunk.points.indices.buffer.size() * sizeof(Index);
+    size += chunk.points.indices.flags.size() * sizeof(OffsetFlags);
 
     return size;
 }
@@ -4829,8 +4849,12 @@ struct ShapeInfo final {
         size_t index_array_size{};
         size_t segment_array_size{};
     };
-    Mesh mesh;
-    Line line;
+    struct Point final {
+        size_t index_array_size{};
+    };
+    Mesh  mesh;
+    Line  line;
+    Point point;
 };
 
 struct Offset final {
@@ -4890,6 +4914,7 @@ inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
         shape_records.back().mesh.face_buffer_start     = chunks.back().mesh.faces.buffer.size();
         shape_records.back().lines.index_buffer_start   = chunks.back().lines.indices.buffer.size();
         shape_records.back().lines.segment_buffer_start = chunks.back().lines.segments.buffer.size();
+        shape_records.back().points.index_buffer_start  = chunks.back().points.indices.buffer.size();
         shape_records.back().chunk_index                = chunks.size() - 1;
     }
 
@@ -4962,42 +4987,49 @@ inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
             auto mesh_faces_buffer_size    = chunks[j].mesh.faces.buffer.size();
             auto lines_index_buffer_size   = chunks[j].lines.indices.buffer.size();
             auto lines_segment_buffer_size = chunks[j].lines.segments.buffer.size();
+            auto points_index_buffer_size  = chunks[j].points.indices.buffer.size();
             if (shape.chunk_index == next.chunk_index) {
                 shape_info.mesh.index_array_size   = next.mesh.index_buffer_start - shape.mesh.index_buffer_start;
                 shape_info.mesh.faces_array_size   = next.mesh.face_buffer_start - shape.mesh.face_buffer_start;
                 shape_info.line.index_array_size   = next.lines.index_buffer_start - shape.lines.index_buffer_start;
                 shape_info.line.segment_array_size = next.lines.segment_buffer_start - shape.lines.segment_buffer_start;
+                shape_info.point.index_array_size  = next.points.index_buffer_start - shape.points.index_buffer_start;
             } else if (j == shape.chunk_index) {
                 shape_info.mesh.index_array_size   = mesh_index_buffer_size - shape.mesh.index_buffer_start;
                 shape_info.mesh.faces_array_size   = mesh_faces_buffer_size - shape.mesh.face_buffer_start;
                 shape_info.line.index_array_size   = lines_index_buffer_size - shape.lines.index_buffer_start;
                 shape_info.line.segment_array_size = lines_segment_buffer_size - shape.lines.segment_buffer_start;
+                shape_info.point.index_array_size  = points_index_buffer_size - shape.points.index_buffer_start;
             } else if (j == next.chunk_index) {
                 shape_info.mesh.index_array_size += next.mesh.index_buffer_start;
                 shape_info.mesh.faces_array_size += next.mesh.face_buffer_start;
                 shape_info.line.index_array_size += next.lines.index_buffer_start;
                 shape_info.line.segment_array_size += next.lines.segment_buffer_start;
+                shape_info.point.index_array_size += next.points.index_buffer_start;
             } else {
                 shape_info.mesh.index_array_size += mesh_index_buffer_size;
                 shape_info.mesh.faces_array_size += mesh_faces_buffer_size;
                 shape_info.line.index_array_size += lines_index_buffer_size;
                 shape_info.line.segment_array_size += lines_segment_buffer_size;
+                shape_info.point.index_array_size += points_index_buffer_size;
             }
         }
 
         // skip empty shape
-        if (!shape_info.mesh.index_array_size && !shape_info.line.index_array_size) {
+        if (!shape_info.mesh.index_array_size && !shape_info.line.index_array_size &&
+            !shape_info.point.index_array_size) {
             continue;
         }
 
         // allocate Shape
-        shapes.push_back(Shape{ std::move(shape.name),
-                                Mesh{ Array<Index>(shape_info.mesh.index_array_size),
-                                      Array<uint8_t>(shape_info.mesh.faces_array_size),
-                                      Array<int32_t>(shape_info.mesh.faces_array_size),
-                                      Array<uint32_t>(shape_info.mesh.faces_array_size) },
-                                Lines{ Array<Index>(shape_info.line.index_array_size),
-                                       Array<int32_t>(shape_info.line.segment_array_size) } });
+        shapes.push_back(Shape{
+            std::move(shape.name),
+            Mesh{ Array<Index>(shape_info.mesh.index_array_size),
+                  Array<uint8_t>(shape_info.mesh.faces_array_size),
+                  Array<int32_t>(shape_info.mesh.faces_array_size),
+                  Array<uint32_t>(shape_info.mesh.faces_array_size) },
+            Lines{ Array<Index>(shape_info.line.index_array_size), Array<int32_t>(shape_info.line.segment_array_size) },
+            Points{ Array<Index>(shape_info.point.index_array_size) } });
 
         // compute tasks to construct shape mesh
         if (shape_info.mesh.index_array_size) {
@@ -5090,6 +5122,33 @@ inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
                 if (nline_size) {
                     tasks.push_back(CopyInts(nline_dst, nline_src, nline_size));
                     nline_dst += nline_size;
+                }
+            }
+        }
+
+        // compute tasks to construct shape points
+        if (shape_info.point.index_array_size) {
+            auto index_dst = shapes.back().points.indices.begin();
+
+            for (size_t j = shape.chunk_index; j <= next.chunk_index; ++j) {
+                auto index_src   = chunks[j].points.indices.buffer.data();
+                auto index_flags = chunks[j].points.indices.flags.data();
+                auto index_size  = chunks[j].points.indices.buffer.size();
+                if (shape.chunk_index == next.chunk_index) {
+                    index_src   = index_src + shape.points.index_buffer_start;
+                    index_flags = index_flags + shape.points.index_buffer_start;
+                    index_size  = next.points.index_buffer_start - shape.points.index_buffer_start;
+                } else if (j == shape.chunk_index) {
+                    index_src   = index_src + shape.points.index_buffer_start;
+                    index_flags = index_flags + shape.points.index_buffer_start;
+                    index_size  = index_size - shape.points.index_buffer_start;
+                } else if (j == next.chunk_index) {
+                    index_size = next.points.index_buffer_start;
+                }
+                if (index_size) {
+                    auto offset = AttributeInfo{ offsets[j].position, offsets[j].texcoord, offsets[j].normal };
+                    tasks.push_back(CopyIndices(index_dst, index_src, index_flags, index_size, offset, count));
+                    index_dst += index_size;
                 }
             }
         }
@@ -5226,6 +5285,7 @@ inline rapidobj_errc ProcessLine(std::string_view line, Chunk* chunk, SharedCont
             chunk->shapes.list.back().mesh.face_buffer_start     = chunk->mesh.faces.buffer.size();
             chunk->shapes.list.back().lines.index_buffer_start   = chunk->lines.indices.buffer.size();
             chunk->shapes.list.back().lines.segment_buffer_start = chunk->lines.segments.buffer.size();
+            chunk->shapes.list.back().points.index_buffer_start  = chunk->points.indices.buffer.size();
         } else {
             return rapidobj_errc::ParseError;
         }
@@ -5309,6 +5369,25 @@ inline rapidobj_errc ProcessLine(std::string_view line, Chunk* chunk, SharedCont
             chunk->lines.segments.buffer.ensure_enough_room_for(1);
             chunk->lines.segments.buffer.push_back(static_cast<unsigned char>(count));
             ++chunk->lines.segments.count;
+        }
+        break;
+    }
+    case 'p': {
+        if (StartsWith(line, "p ") || StartsWith(line, "p\t")) {
+            line.remove_prefix(2);
+            auto [count, rc] = ParseFace(
+                line,
+                chunk->positions.count,
+                chunk->texcoords.count,
+                chunk->normals.count,
+                kMinVerticesInPoint,
+                kMaxVerticesInPoint,
+                static_cast<OffsetFlags>(ApplyOffset::Position),
+                &chunk->points.indices.buffer,
+                &chunk->points.indices.flags);
+            if (rc != rapidobj_errc::Success) {
+                return rc;
+            }
         }
         break;
     }

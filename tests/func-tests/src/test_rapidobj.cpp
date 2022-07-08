@@ -59,6 +59,24 @@ TEST_CASE("mario-triangulated")
     CHECK(test.IsEqualToReference());
 }
 
+TEST_CASE("primitives")
+{
+    auto test = MakeTest("primitives/primitives.obj.test");
+
+    CHECK(test.IsTestValid());
+
+    CHECK(test.IsEqualToReference());
+}
+
+TEST_CASE("primitives-triangulated")
+{
+    auto test = MakeTestTriangulated("primitives/primitives.obj.tri.test");
+
+    CHECK(test.IsTestValid());
+
+    CHECK(test.IsEqualToReference());
+}
+
 TEST_CASE("sponza")
 {
     auto test = MakeTest("sponza/sponza.obj.test");
