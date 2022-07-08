@@ -3366,6 +3366,7 @@ struct ShapeRecord final {
 
 struct MaterialRecord final {
     std::string name;
+    std::string line{};
     size_t      line_num{};
     size_t      face_buffer_start{};
 };
@@ -3509,6 +3510,26 @@ struct CopyElements;
 template <typename T>
 struct FillIds;
 
+template <typename T>
+struct FillSrc final {
+    T      id{};
+    size_t offset{};
+};
+
+struct AttributeInfo final {
+    size_t position{};
+    size_t texcoord{};
+    size_t normal{};
+
+    AttributeInfo& operator+=(const AttributeInfo& rhs) noexcept
+    {
+        position += rhs.position;
+        texcoord += rhs.texcoord;
+        normal += rhs.normal;
+        return *this;
+    }
+};
+
 struct CopyIndices;
 
 using CopyBytes  = CopyElements<uint8_t>;
@@ -3523,70 +3544,67 @@ using MergeTasks = std::vector<MergeTask>;
 
 template <typename T>
 struct CopyElements final {
-    CopyElements(T* dst, const T* src, size_t size) noexcept : state{ dst, src, size } {}
+    CopyElements(T* dst, const T* src, size_t size) noexcept : m_dst(dst), m_src(src), m_size(size) {}
 
     auto Cost() const noexcept
     {
         constexpr auto cost = sizeof(T) == 1 ? kMergeCopyByteCost : kMergeCopyIntCost;
-        return cost * state.size;
+        return cost * m_size;
     }
 
     auto Execute() const noexcept
     {
-        memcpy(state.dst, state.src, state.size * sizeof(T));
+        memcpy(m_dst, m_src, m_size * sizeof(T));
         return rapidobj_errc::Success;
     }
 
     auto Subdivide(size_t num) const noexcept
     {
+        auto begin = size_t{ 0 };
         auto tasks = MergeTasks();
         tasks.reserve(num);
-
-        auto begin = size_t{ 0 };
-
         for (size_t i = 0; i != num; ++i) {
-            auto end = (1 + i) * state.size / num;
-            tasks.push_back(CopyElements(state.dst + begin, state.src + begin, end - begin));
+            auto end = (1 + i) * m_size / num;
+            tasks.push_back(CopyElements(m_dst + begin, m_src + begin, end - begin));
             begin = end;
         }
-
         return tasks;
     }
 
-    struct final {
-        T*       dst;
-        const T* src;
-        size_t   size;
-    } state{};
+  private:
+    T*       m_dst{};
+    const T* m_src;
+    size_t   m_size;
 };
 
 template <typename T>
 struct FillIds final {
-    FillIds(T* dst, const std::vector<T>& ids, const std::vector<size_t>& offsets, size_t size, size_t start) noexcept
-        : state{ dst, ids, offsets, size, start }
+    FillIds(T* dst, const std::vector<FillSrc<T>>& src, size_t size, size_t start) noexcept
+        : m_dst(dst), m_src(&src), m_size(size), m_start(start)
     {}
 
-    auto Cost() const noexcept { return kMergeFillIdCost * state.size; }
+    auto Cost() const noexcept { return kMergeFillIdCost * m_size; }
 
     auto Execute() const noexcept
     {
-        auto it = std::lower_bound(state.offsets.begin(), state.offsets.end(), state.start);
-        if (it == state.offsets.end()) {
+        auto comp = [](auto src, size_t offset) { return src.offset < offset; };
+        auto it   = std::lower_bound(m_src->begin(), m_src->end(), m_start, comp);
+        if (it == m_src->end()) {
             return rapidobj_errc::InternalError;
         }
 
-        auto index = static_cast<size_t>(it - state.offsets.begin());
-        if (state.offsets[index] != state.start) {
+        auto index = static_cast<size_t>(it - m_src->begin());
+        if (m_src->at(index).offset != m_start) {
             --index;
         }
 
-        auto dst   = state.dst;
-        auto size  = state.size;
-        auto start = state.start;
+        auto dst   = m_dst;
+        auto size  = m_size;
+        auto start = m_start;
 
-        while (size > 0 && index < state.offsets.size() - 1) {
-            auto count = std::min(size, state.offsets[index + 1] - start);
-            std::fill_n(dst, count, state.ids[index]);
+        while (size > 0 && index < m_src->size() - 1) {
+            auto count = std::min(size, m_src->at(index + 1).offset - start);
+            std::fill_n(dst, count, m_src->at(index).id);
             start += count;
             dst += count;
             size -= count;
@@ -3598,27 +3616,22 @@ struct FillIds final {
 
     auto Subdivide(size_t num) const noexcept
     {
+        auto begin = size_t{ 0 };
         auto tasks = MergeTasks();
         tasks.reserve(num);
-
-        auto begin = size_t{ 0 };
-
         for (size_t i = 0; i != num; ++i) {
-            auto end = (1 + i) * state.size / num;
-            tasks.push_back(FillIds(state.dst + begin, state.ids, state.offsets, end - begin, state.start + begin));
+            auto end = (1 + i) * m_size / num;
+            tasks.push_back(FillIds(m_dst + begin, *m_src, end - begin, m_start + begin));
             begin = end;
         }
-
         return tasks;
     }
 
-    struct final {
-        T*                         dst;
-        const std::vector<T>&      ids;
-        const std::vector<size_t>& offsets;
-        size_t                     size;
-        size_t                     start;
-    } state{};
+  private:
+    T*                             m_dst{};
+    const std::vector<FillSrc<T>>* m_src{};
+    size_t                         m_size{};
+    size_t                         m_start{};
 };
 
 struct CopyIndices final {
@@ -3627,56 +3640,51 @@ struct CopyIndices final {
         const Index*       src,
         const OffsetFlags* offset_flags,
         size_t             size,
-        size_t             position_offset,
-        size_t             texcoord_offset,
-        size_t             normal_offset,
-        size_t             num_positions,
-        size_t             num_texcoords,
-        size_t             num_normals) noexcept
-        : state{ dst,           src,           offset_flags,  size,       position_offset, texcoord_offset,
-                 normal_offset, num_positions, num_texcoords, num_normals }
+        AttributeInfo      offset,
+        AttributeInfo      count) noexcept
+        : m_dst(dst), m_src(src), m_offset_flags(offset_flags), m_size(size), m_offset(offset), m_count(count)
     {}
 
-    auto Cost() const noexcept { return kMergeCopyIndexCost * state.size; }
+    auto Cost() const noexcept { return kMergeCopyIndexCost * m_size; }
 
     auto Execute() const noexcept
     {
-        for (size_t i = 0; i != state.size; ++i) {
-            auto position_index = state.src[i].position_index;
-            auto texcoord_index = state.src[i].texcoord_index;
-            auto normal_index   = state.src[i].normal_index;
-            auto offset_flags   = state.offset_flags[i];
+        for (size_t i = 0; i != m_size; ++i) {
+            auto position_index = m_src[i].position_index;
+            auto texcoord_index = m_src[i].texcoord_index;
+            auto normal_index   = m_src[i].normal_index;
+            auto offset_flags   = m_offset_flags[i];
 
             bool is_out_of_bounds = false;
 
             if (offset_flags & ApplyOffset::Position) {
-                position_index += static_cast<int>(state.position_offset);
+                position_index += static_cast<int>(m_offset.position);
             }
-            is_out_of_bounds |= position_index < 0 || position_index >= static_cast<int>(state.num_positions);
+            is_out_of_bounds |= position_index < 0 || position_index >= static_cast<int>(m_count.position);
 
             if (offset_flags & ApplyOffset::Texcoord) {
-                texcoord_index += static_cast<int>(state.texcoord_offset);
+                texcoord_index += static_cast<int>(m_offset.texcoord);
                 is_out_of_bounds |= texcoord_index < 0;
             } else {
                 is_out_of_bounds |= texcoord_index < -1;
             }
-            is_out_of_bounds |= texcoord_index >= static_cast<int>(state.num_texcoords);
+            is_out_of_bounds |= texcoord_index >= static_cast<int>(m_count.texcoord);
 
             if (offset_flags & ApplyOffset::Normal) {
-                normal_index += static_cast<int>(state.normal_offset);
+                normal_index += static_cast<int>(m_offset.normal);
                 is_out_of_bounds |= normal_index < 0;
             } else {
                 is_out_of_bounds |= normal_index < -1;
             }
-            is_out_of_bounds |= normal_index >= static_cast<int>(state.num_normals);
+            is_out_of_bounds |= normal_index >= static_cast<int>(m_count.normal);
 
             if (is_out_of_bounds) {
                 return rapidobj_errc::IndexOutOfBoundsError;
             }
 
-            state.dst[i].position_index = position_index;
-            state.dst[i].texcoord_index = texcoord_index;
-            state.dst[i].normal_index   = normal_index;
+            m_dst[i].position_index = position_index;
+            m_dst[i].texcoord_index = texcoord_index;
+            m_dst[i].normal_index   = normal_index;
         }
 
         return rapidobj_errc::Success;
@@ -3684,44 +3692,24 @@ struct CopyIndices final {
 
     auto Subdivide(size_t num) const noexcept
     {
+        auto begin = size_t{ 0 };
         auto tasks = MergeTasks();
         tasks.reserve(num);
-
-        auto begin = size_t{ 0 };
-
         for (size_t i = 0; i != num; ++i) {
-            auto end = (1 + i) * state.size / num;
-
-            tasks.push_back(CopyIndices(
-                state.dst + begin,
-                state.src + begin,
-                state.offset_flags,
-                end - begin,
-                state.position_offset,
-                state.texcoord_offset,
-                state.normal_offset,
-                state.num_positions,
-                state.num_texcoords,
-                state.num_normals));
-
+            auto end = (1 + i) * m_size / num;
+            tasks.push_back(CopyIndices(m_dst + begin, m_src + begin, m_offset_flags, end - begin, m_offset, m_count));
             begin = end;
         }
-
         return tasks;
     }
 
-    struct final {
-        Index*             dst;
-        const Index*       src;
-        const OffsetFlags* offset_flags;
-        size_t             size;
-        size_t             position_offset;
-        size_t             texcoord_offset;
-        size_t             normal_offset;
-        size_t             num_positions;
-        size_t             num_texcoords;
-        size_t             num_normals;
-    } state{};
+  private:
+    Index*             m_dst{};
+    const Index*       m_src{};
+    const OffsetFlags* m_offset_flags{};
+    size_t             m_size{};
+    AttributeInfo      m_offset{};
+    AttributeInfo      m_count{};
 };
 
 struct Reader {
@@ -4003,10 +3991,10 @@ class File final {
             m_error = std::error_code(errno, std::system_category());
         }
     }
-    File(const File&)            = delete;
+    File(const File&) = delete;
     File& operator=(const File&) = delete;
-    File(File&&)                 = delete;
-    File& operator=(File&&)      = delete;
+    File(File&&) = delete;
+    File& operator=(File&&) = delete;
     ~File() noexcept
     {
         if (m_fd != -1) {
@@ -4020,8 +4008,8 @@ class File final {
     auto error() const noexcept { return m_error; }
 
   private:
-    int             m_fd = -1;
-    struct stat     m_info {};
+    int m_fd = -1;
+    struct stat m_info {};
     std::error_code m_error{};
 };
 
@@ -4039,7 +4027,7 @@ struct FileReader : Reader {
         assert(std::uintptr_t(buffer) % 4096 == 0);
 
         m_offset = offset;
-        m_size   = size;
+        m_size = size;
         m_buffer = buffer;
 
         radvisory args{};
@@ -4067,10 +4055,10 @@ struct FileReader : Reader {
     }
 
   private:
-    int    m_fd = -1;
-    off_t  m_offset{};
+    int m_fd = -1;
+    off_t m_offset{};
     size_t m_size{};
-    char*  m_buffer{};
+    char* m_buffer{};
 };
 
 #endif
@@ -4815,71 +4803,88 @@ inline void MergeParallel(MergeTasks* merge_tasks, SharedContext* context)
     context->merging.completed.get_future().wait();
 }
 
+// Merge function helper structs
+struct ListInfo final {
+    size_t face_buffers_size{};
+    size_t shape_records_size{};
+    size_t material_offsets_size{};
+    size_t smoothing_offsets_size{};
+
+    ListInfo& operator+=(const ListInfo& rhs) noexcept
+    {
+        face_buffers_size += rhs.face_buffers_size;
+        shape_records_size += rhs.shape_records_size;
+        material_offsets_size += rhs.material_offsets_size;
+        smoothing_offsets_size += rhs.smoothing_offsets_size;
+        return *this;
+    }
+};
+
+struct ShapeInfo final {
+    struct Mesh final {
+        size_t index_array_size{};
+        size_t faces_array_size{};
+    };
+    struct Line final {
+        size_t index_array_size{};
+        size_t segment_array_size{};
+    };
+    Mesh mesh;
+    Line line;
+};
+
+struct Offset final {
+    size_t position{};
+    size_t texcoord{};
+    size_t normal{};
+    size_t face{};
+
+    Offset& operator+=(const Offset& rhs) noexcept
+    {
+        position += rhs.position;
+        texcoord += rhs.texcoord;
+        normal += rhs.normal;
+        face += rhs.face;
+        return *this;
+    }
+};
+
 inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
 {
     // compute overall sizes of lists
-    auto face_buffers_size      = size_t{};
-    auto shape_records_size     = size_t{};
-    auto material_offsets_size  = size_t{};
-    auto smoothing_offsets_size = size_t{};
-
+    auto list_info = ListInfo{};
     for (const Chunk& chunk : chunks) {
-        face_buffers_size += chunk.mesh.faces.buffer.size();
-        shape_records_size += chunk.shapes.list.size();
-        material_offsets_size += chunk.materials.list.size();
-        smoothing_offsets_size += chunk.smoothing.list.size();
+        list_info += { chunk.mesh.faces.buffer.size(),
+                       chunk.shapes.list.size(),
+                       chunk.materials.list.size(),
+                       chunk.smoothing.list.size() };
     }
 
-    // compute offsets for each chunk
-    auto position_buffer_offsets = std::vector<size_t>();
-    auto texcoord_buffer_offsets = std::vector<size_t>();
-    auto normal_buffer_offsets   = std::vector<size_t>();
-    auto face_buffer_offsets     = std::vector<size_t>();
-
+    // compute offsets for each chunk and total attribute count
+    auto offsets = std::vector<Offset>();
+    auto count   = AttributeInfo{};
     {
-        position_buffer_offsets.reserve(chunks.size());
-        texcoord_buffer_offsets.reserve(chunks.size());
-        normal_buffer_offsets.reserve(chunks.size());
-        face_buffer_offsets.reserve(chunks.size());
-
-        auto current_position_buffer_offset = size_t{ 0 };
-        auto current_texcoord_buffer_offset = size_t{ 0 };
-        auto current_normal_buffer_offset   = size_t{ 0 };
-        auto current_face_buffer_offset     = size_t{ 0 };
-
+        offsets.reserve(chunks.size());
+        auto running = Offset{};
         for (const Chunk& chunk : chunks) {
-            position_buffer_offsets.push_back(current_position_buffer_offset);
-            texcoord_buffer_offsets.push_back(current_texcoord_buffer_offset);
-            normal_buffer_offsets.push_back(current_normal_buffer_offset);
-            face_buffer_offsets.push_back(current_face_buffer_offset);
-
-            current_position_buffer_offset += chunk.positions.count;
-            current_texcoord_buffer_offset += chunk.texcoords.count;
-            current_normal_buffer_offset += chunk.normals.count;
-            current_face_buffer_offset += chunk.mesh.faces.count;
+            offsets.push_back(running);
+            running += { chunk.positions.count, chunk.texcoords.count, chunk.normals.count, chunk.mesh.faces.count };
         }
-
-        context->stats.num_positions = current_position_buffer_offset;
-        context->stats.num_texcoords = current_texcoord_buffer_offset;
-        context->stats.num_normals   = current_normal_buffer_offset;
+        count          = { running.position, running.texcoord, running.normal };
+        context->stats = { running.position, running.texcoord, running.normal };
     }
 
-    // coalesce per-chunk shape-group lists into a single shape-group list
+    // coalesce per-chunk shape records into a single shape records list
     auto shape_records = std::vector<ShapeRecord>();
-
     {
-        shape_records.reserve(shape_records_size + 2);
-
+        shape_records.reserve(list_info.shape_records_size + 2);
         shape_records.push_back({});
-
         for (size_t i = 0; i != chunks.size(); ++i) {
-            auto& chunk = chunks[i];
-            for (auto& group : chunk.shapes.list) {
-                shape_records.push_back(group);
+            for (const ShapeRecord& record : chunks[i].shapes.list) {
+                shape_records.push_back(record);
                 shape_records.back().chunk_index = i;
             }
         }
-
         shape_records.push_back({});
         shape_records.back().mesh.index_buffer_start    = chunks.back().mesh.indices.buffer.size();
         shape_records.back().mesh.face_buffer_start     = chunks.back().mesh.faces.buffer.size();
@@ -4888,71 +4893,55 @@ inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
         shape_records.back().chunk_index                = chunks.size() - 1;
     }
 
-    // coalesce per-chunk material-record lists into a material-offsets list and a material-ids list
-    auto material_offsets = std::vector<size_t>();
-    auto material_ids     = std::vector<int>();
-
-    const auto& result = context->material.parse_result.valid() ? context->material.parse_result.get()
-                                                                : ParseMaterialFileResult{};
+    // prepare smoothing-source list from per-chunk smoothing-record lists
+    auto smoothing_src = std::vector<FillSrc<uint32_t>>();
     {
-        if (result.error.code) {
-            return Result{ Attributes{}, Shapes{}, Materials{}, { result.error.code } };
-        }
-
-        material_offsets.reserve(material_offsets_size + 2);
-        material_ids.reserve(material_offsets_size + 2);
-
-        material_offsets.push_back(0);
-        material_ids.push_back(-1);
+        smoothing_src.reserve(list_info.smoothing_offsets_size + 2);
+        smoothing_src.push_back({ 0, 0 });
         for (size_t i = 0; i != chunks.size(); ++i) {
-            for (const MaterialRecord& material : chunks[i].materials.list) {
-                if (!material_offsets.empty() &&
-                    (material.face_buffer_start + face_buffer_offsets[i] == material_offsets.back())) {
-                    material_offsets.pop_back();
-                    material_ids.pop_back();
-                }
-                material_offsets.push_back(material.face_buffer_start + face_buffer_offsets[i]);
-                if (auto it = result.material_map.find(material.name); it != result.material_map.end()) {
-                    material_ids.push_back(it->second);
-                } else {
-                    auto running_line_num = size_t{};
-                    for (size_t j = 0; j != i; ++j) {
-                        running_line_num += chunks[j].text.line_count;
+            for (const SmoothingRecord& record : chunks[i].smoothing.list) {
+                if (!smoothing_src.empty()) {
+                    if (record.face_buffer_start + offsets[i].face == smoothing_src.back().offset) {
+                        smoothing_src.pop_back();
                     }
-                    auto line     = "usemtl " + material.name;
-                    auto line_num = running_line_num + material.line_num;
-                    auto error    = Error{ rapidobj_errc::MaterialNotFoundError, std::move(line), line_num };
+                }
+                smoothing_src.push_back({ record.group_id, record.face_buffer_start + offsets[i].face });
+            }
+        }
+        smoothing_src.push_back({ 0, list_info.face_buffers_size });
+    }
+
+    const auto& mtllib = context->material.parse_result.valid() ? context->material.parse_result.get()
+                                                                : ParseMaterialFileResult{};
+    if (mtllib.error.code) {
+        return Result{ Attributes{}, Shapes{}, Materials{}, { mtllib.error.code } };
+    }
+
+    // prepare material-source list from per-chunk material-record lists
+    auto material_src = std::vector<FillSrc<int32_t>>();
+    {
+        material_src.reserve(list_info.material_offsets_size + 2);
+        material_src.push_back({ -1, 0 });
+        for (size_t i = 0; i != chunks.size(); ++i) {
+            for (const MaterialRecord& record : chunks[i].materials.list) {
+                if (!material_src.empty()) {
+                    if (record.face_buffer_start + offsets[i].face == material_src.back().offset) {
+                        material_src.pop_back();
+                    }
+                }
+                if (auto it = mtllib.material_map.find(record.name); it != mtllib.material_map.end()) {
+                    material_src.push_back({ it->second, record.face_buffer_start + offsets[i].face });
+                } else {
+                    auto line_num = record.line_num;
+                    for (size_t j = 0; j != i; ++j) {
+                        line_num += chunks[j].text.line_count;
+                    }
+                    auto error = Error{ rapidobj_errc::MaterialNotFoundError, record.line, line_num };
                     return Result{ Attributes{}, Shapes{}, Materials{}, std::move(error) };
                 }
             }
         }
-        material_offsets.push_back(face_buffers_size);
-        material_ids.push_back(-1);
-    }
-
-    // coalesce per-chunk smoothing-record lists into a smoothing-offsets list and a smoothing-ids list
-    auto smoothing_offsets = std::vector<size_t>();
-    auto smoothing_ids     = std::vector<unsigned int>();
-
-    {
-        smoothing_offsets.reserve(smoothing_offsets_size + 2);
-        smoothing_ids.reserve(smoothing_offsets_size + 2);
-
-        smoothing_offsets.push_back(0);
-        smoothing_ids.push_back(0);
-        for (size_t i = 0; i != chunks.size(); ++i) {
-            for (const SmoothingRecord& smoothing : chunks[i].smoothing.list) {
-                if (!smoothing_offsets.empty() &&
-                    (smoothing.face_buffer_start + face_buffer_offsets[i] == smoothing_offsets.back())) {
-                    smoothing_offsets.pop_back();
-                    smoothing_ids.pop_back();
-                }
-                smoothing_offsets.push_back(smoothing.face_buffer_start + face_buffer_offsets[i]);
-                smoothing_ids.push_back(smoothing.group_id);
-            }
-        }
-        smoothing_offsets.push_back(face_buffers_size);
-        smoothing_ids.push_back(0);
+        material_src.push_back({ -1, list_info.face_buffers_size });
     }
 
     auto shapes = Shapes();
@@ -4960,253 +4949,192 @@ inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
 
     shapes.reserve(shape_records.size());
 
+    // this big loop allocates shapes and computes tasks that construct them
     for (size_t i = 0; i != shape_records.size() - 1; ++i) {
-        auto& shape      = shape_records[i];
-        auto& next_shape = shape_records[i + 1];
+        auto& shape = shape_records[i];
+        auto& next  = shape_records[i + 1];
 
-        auto mesh_index_array_size = size_t{};
-        auto mesh_faces_array_size = size_t{};
+        // compute shape info
+        auto shape_info = ShapeInfo{};
 
-        for (size_t j = shape.chunk_index; j <= next_shape.chunk_index; ++j) {
-            auto index_buffer_size = chunks[j].mesh.indices.buffer.size();
-            auto faces_buffer_size = chunks[j].mesh.faces.buffer.size();
-            if (shape.chunk_index == next_shape.chunk_index) {
-                mesh_index_array_size = next_shape.mesh.index_buffer_start - shape.mesh.index_buffer_start;
-                mesh_faces_array_size = next_shape.mesh.face_buffer_start - shape.mesh.face_buffer_start;
+        for (size_t j = shape.chunk_index; j <= next.chunk_index; ++j) {
+            auto mesh_index_buffer_size    = chunks[j].mesh.indices.buffer.size();
+            auto mesh_faces_buffer_size    = chunks[j].mesh.faces.buffer.size();
+            auto lines_index_buffer_size   = chunks[j].lines.indices.buffer.size();
+            auto lines_segment_buffer_size = chunks[j].lines.segments.buffer.size();
+            if (shape.chunk_index == next.chunk_index) {
+                shape_info.mesh.index_array_size   = next.mesh.index_buffer_start - shape.mesh.index_buffer_start;
+                shape_info.mesh.faces_array_size   = next.mesh.face_buffer_start - shape.mesh.face_buffer_start;
+                shape_info.line.index_array_size   = next.lines.index_buffer_start - shape.lines.index_buffer_start;
+                shape_info.line.segment_array_size = next.lines.segment_buffer_start - shape.lines.segment_buffer_start;
             } else if (j == shape.chunk_index) {
-                mesh_index_array_size = index_buffer_size - shape.mesh.index_buffer_start;
-                mesh_faces_array_size = faces_buffer_size - shape.mesh.face_buffer_start;
-            } else if (j == next_shape.chunk_index) {
-                mesh_index_array_size += next_shape.mesh.index_buffer_start;
-                mesh_faces_array_size += next_shape.mesh.face_buffer_start;
+                shape_info.mesh.index_array_size   = mesh_index_buffer_size - shape.mesh.index_buffer_start;
+                shape_info.mesh.faces_array_size   = mesh_faces_buffer_size - shape.mesh.face_buffer_start;
+                shape_info.line.index_array_size   = lines_index_buffer_size - shape.lines.index_buffer_start;
+                shape_info.line.segment_array_size = lines_segment_buffer_size - shape.lines.segment_buffer_start;
+            } else if (j == next.chunk_index) {
+                shape_info.mesh.index_array_size += next.mesh.index_buffer_start;
+                shape_info.mesh.faces_array_size += next.mesh.face_buffer_start;
+                shape_info.line.index_array_size += next.lines.index_buffer_start;
+                shape_info.line.segment_array_size += next.lines.segment_buffer_start;
             } else {
-                mesh_index_array_size += index_buffer_size;
-                mesh_faces_array_size += faces_buffer_size;
+                shape_info.mesh.index_array_size += mesh_index_buffer_size;
+                shape_info.mesh.faces_array_size += mesh_faces_buffer_size;
+                shape_info.line.index_array_size += lines_index_buffer_size;
+                shape_info.line.segment_array_size += lines_segment_buffer_size;
             }
         }
 
-        auto lines_index_array_size   = size_t{};
-        auto lines_segment_array_size = size_t{};
-
-        for (size_t j = shape.chunk_index; j <= next_shape.chunk_index; ++j) {
-            auto index_buffer_size   = chunks[j].lines.indices.buffer.size();
-            auto segment_buffer_size = chunks[j].lines.segments.buffer.size();
-            if (shape.chunk_index == next_shape.chunk_index) {
-                lines_index_array_size   = next_shape.lines.index_buffer_start - shape.lines.index_buffer_start;
-                lines_segment_array_size = next_shape.lines.segment_buffer_start - shape.lines.segment_buffer_start;
-            } else if (j == shape.chunk_index) {
-                lines_index_array_size   = index_buffer_size - shape.lines.index_buffer_start;
-                lines_segment_array_size = segment_buffer_size - shape.lines.segment_buffer_start;
-            } else if (j == next_shape.chunk_index) {
-                lines_index_array_size += next_shape.lines.index_buffer_start;
-                lines_segment_array_size += next_shape.lines.segment_buffer_start;
-            } else {
-                lines_index_array_size += index_buffer_size;
-                lines_segment_array_size += segment_buffer_size;
-            }
-        }
-
-        if (mesh_index_array_size == 0 && lines_index_array_size == 0) {
+        // skip empty shape
+        if (!shape_info.mesh.index_array_size && !shape_info.line.index_array_size) {
             continue;
         }
 
-        shapes.push_back(
-            Shape{ std::move(shape.name),
-                   Mesh{ Array<Index>(mesh_index_array_size),
-                         Array<uint8_t>(mesh_faces_array_size),
-                         Array<int32_t>(mesh_faces_array_size),
-                         Array<uint32_t>(mesh_faces_array_size) },
-                   Lines{ Array<Index>(lines_index_array_size), Array<int32_t>(lines_segment_array_size) } });
+        // allocate Shape
+        shapes.push_back(Shape{ std::move(shape.name),
+                                Mesh{ Array<Index>(shape_info.mesh.index_array_size),
+                                      Array<uint8_t>(shape_info.mesh.faces_array_size),
+                                      Array<int32_t>(shape_info.mesh.faces_array_size),
+                                      Array<uint32_t>(shape_info.mesh.faces_array_size) },
+                                Lines{ Array<Index>(shape_info.line.index_array_size),
+                                       Array<int32_t>(shape_info.line.segment_array_size) } });
 
-        if (mesh_index_array_size) {
-            // compute mesh indices mem copies
+        // compute tasks to construct shape mesh
+        if (shape_info.mesh.index_array_size) {
+            // compute mesh mem copies
             {
-                auto dst = shapes.back().mesh.indices.begin();
+                auto index_dst = shapes.back().mesh.indices.begin();
+                auto nface_dst = shapes.back().mesh.num_face_vertices.begin();
 
-                for (size_t j = shape.chunk_index; j <= next_shape.chunk_index; ++j) {
-                    auto src   = chunks[j].mesh.indices.buffer.data();
-                    auto flags = chunks[j].mesh.indices.flags.data();
-                    auto size  = chunks[j].mesh.indices.buffer.size();
-                    if (shape.chunk_index == next_shape.chunk_index) {
-                        src   = src + shape.mesh.index_buffer_start;
-                        flags = flags + shape.mesh.index_buffer_start;
-                        size  = next_shape.mesh.index_buffer_start - shape.mesh.index_buffer_start;
+                for (size_t j = shape.chunk_index; j <= next.chunk_index; ++j) {
+                    auto index_src   = chunks[j].mesh.indices.buffer.data();
+                    auto index_flags = chunks[j].mesh.indices.flags.data();
+                    auto index_size  = chunks[j].mesh.indices.buffer.size();
+                    auto nface_src   = chunks[j].mesh.faces.buffer.data();
+                    auto nface_size  = chunks[j].mesh.faces.buffer.size();
+                    if (shape.chunk_index == next.chunk_index) {
+                        index_src   = index_src + shape.mesh.index_buffer_start;
+                        index_flags = index_flags + shape.mesh.index_buffer_start;
+                        index_size  = next.mesh.index_buffer_start - shape.mesh.index_buffer_start;
+                        nface_src   = nface_src + shape.mesh.face_buffer_start;
+                        nface_size  = next.mesh.face_buffer_start - shape.mesh.face_buffer_start;
                     } else if (j == shape.chunk_index) {
-                        src   = src + shape.mesh.index_buffer_start;
-                        flags = flags + shape.mesh.index_buffer_start;
-                        size  = size - shape.mesh.index_buffer_start;
-                    } else if (j == next_shape.chunk_index) {
-                        size = next_shape.mesh.index_buffer_start;
+                        index_src   = index_src + shape.mesh.index_buffer_start;
+                        index_flags = index_flags + shape.mesh.index_buffer_start;
+                        index_size  = index_size - shape.mesh.index_buffer_start;
+                        nface_src   = nface_src + shape.mesh.face_buffer_start;
+                        nface_size  = nface_size - shape.mesh.face_buffer_start;
+                    } else if (j == next.chunk_index) {
+                        index_size = next.mesh.index_buffer_start;
+                        nface_size = next.mesh.face_buffer_start;
                     }
-                    if (size) {
-                        tasks.push_back(CopyIndices(
-                            dst,
-                            src,
-                            flags,
-                            size,
-                            position_buffer_offsets[j],
-                            texcoord_buffer_offsets[j],
-                            normal_buffer_offsets[j],
-                            context->stats.num_positions,
-                            context->stats.num_texcoords,
-                            context->stats.num_normals));
-                        dst += size;
+                    if (index_size) {
+                        auto offset = AttributeInfo{ offsets[j].position, offsets[j].texcoord, offsets[j].normal };
+                        tasks.push_back(CopyIndices(index_dst, index_src, index_flags, index_size, offset, count));
+                        index_dst += index_size;
+                    }
+                    if (nface_size) {
+                        tasks.push_back(CopyBytes(nface_dst, nface_src, nface_size));
+                        nface_dst += nface_size;
                     }
                 }
             }
-
-            // compute mesh num_face_vertices mem copies
-            {
-                auto dst = shapes.back().mesh.num_face_vertices.begin();
-
-                for (size_t j = shape.chunk_index; j <= next_shape.chunk_index; ++j) {
-                    auto src  = chunks[j].mesh.faces.buffer.data();
-                    auto size = chunks[j].mesh.faces.buffer.size();
-                    if (shape.chunk_index == next_shape.chunk_index) {
-                        src  = src + shape.mesh.face_buffer_start;
-                        size = next_shape.mesh.face_buffer_start - shape.mesh.face_buffer_start;
-                    } else if (j == shape.chunk_index) {
-                        src  = src + shape.mesh.face_buffer_start;
-                        size = size - shape.mesh.face_buffer_start;
-                    } else if (j == next_shape.chunk_index) {
-                        size = next_shape.mesh.face_buffer_start;
-                    }
-                    if (size) {
-                        tasks.push_back(CopyBytes(dst, src, size));
-                        dst += size;
-                    }
-                }
-            }
-
-            // compute material_id writes
+            // compute material id fills
             {
                 auto dst   = shapes.back().mesh.material_ids.begin();
-                auto size  = mesh_faces_array_size;
-                auto start = shape.mesh.face_buffer_start + face_buffer_offsets[shape.chunk_index];
-                tasks.push_back(FillMaterialIds(dst, material_ids, material_offsets, size, start));
+                auto size  = shape_info.mesh.faces_array_size;
+                auto start = shape.mesh.face_buffer_start + offsets[shape.chunk_index].face;
+                tasks.push_back(FillMaterialIds(dst, material_src, size, start));
             }
-
-            // compute smoothing_group_ids writes
+            // compute smoothing group id fills
             {
                 auto dst   = shapes.back().mesh.smoothing_group_ids.begin();
-                auto size  = mesh_faces_array_size;
-                auto start = shape.mesh.face_buffer_start + face_buffer_offsets[shape.chunk_index];
-                tasks.push_back(FillSmoothingGroupIds(dst, smoothing_ids, smoothing_offsets, size, start));
+                auto size  = shape_info.mesh.faces_array_size;
+                auto start = shape.mesh.face_buffer_start + offsets[shape.chunk_index].face;
+                tasks.push_back(FillSmoothingGroupIds(dst, smoothing_src, size, start));
             }
         }
 
-        if (lines_index_array_size) {
-            // compute lines indices mem copies
-            {
-                auto dst = shapes.back().lines.indices.begin();
+        // compute tasks to construct shape lines
+        if (shape_info.line.index_array_size) {
+            auto index_dst = shapes.back().lines.indices.begin();
+            auto nline_dst = shapes.back().lines.num_line_vertices.begin();
 
-                for (size_t j = shape.chunk_index; j <= next_shape.chunk_index; ++j) {
-                    auto src   = chunks[j].lines.indices.buffer.data();
-                    auto flags = chunks[j].lines.indices.flags.data();
-                    auto size  = chunks[j].lines.indices.buffer.size();
-                    if (shape.chunk_index == next_shape.chunk_index) {
-                        src   = src + shape.lines.index_buffer_start;
-                        flags = flags + shape.lines.index_buffer_start;
-                        size  = next_shape.lines.index_buffer_start - shape.lines.index_buffer_start;
-                    } else if (j == shape.chunk_index) {
-                        src   = src + shape.lines.index_buffer_start;
-                        flags = flags + shape.lines.index_buffer_start;
-                        size  = size - shape.lines.index_buffer_start;
-                    } else if (j == next_shape.chunk_index) {
-                        size = next_shape.lines.index_buffer_start;
-                    }
-                    if (size) {
-                        tasks.push_back(CopyIndices(
-                            dst,
-                            src,
-                            flags,
-                            size,
-                            position_buffer_offsets[j],
-                            texcoord_buffer_offsets[j],
-                            normal_buffer_offsets[j],
-                            context->stats.num_positions,
-                            context->stats.num_texcoords,
-                            context->stats.num_normals));
-                        dst += size;
-                    }
+            for (size_t j = shape.chunk_index; j <= next.chunk_index; ++j) {
+                auto index_src   = chunks[j].lines.indices.buffer.data();
+                auto index_flags = chunks[j].lines.indices.flags.data();
+                auto index_size  = chunks[j].lines.indices.buffer.size();
+                auto nline_src   = chunks[j].lines.segments.buffer.data();
+                auto nline_size  = chunks[j].lines.segments.buffer.size();
+                if (shape.chunk_index == next.chunk_index) {
+                    index_src   = index_src + shape.lines.index_buffer_start;
+                    index_flags = index_flags + shape.lines.index_buffer_start;
+                    index_size  = next.lines.index_buffer_start - shape.lines.index_buffer_start;
+                    nline_src   = nline_src + shape.lines.segment_buffer_start;
+                    nline_size  = next.lines.segment_buffer_start - shape.lines.segment_buffer_start;
+                } else if (j == shape.chunk_index) {
+                    index_src   = index_src + shape.lines.index_buffer_start;
+                    index_flags = index_flags + shape.lines.index_buffer_start;
+                    index_size  = index_size - shape.lines.index_buffer_start;
+                    nline_src   = nline_src + shape.lines.segment_buffer_start;
+                    nline_size  = nline_size - shape.lines.segment_buffer_start;
+                } else if (j == next.chunk_index) {
+                    index_size = next.lines.index_buffer_start;
+                    nline_size = next.lines.segment_buffer_start;
                 }
-            }
-
-            // compute lines num_line_vertices mem copies
-            {
-                auto dst = shapes.back().lines.num_line_vertices.begin();
-
-                for (size_t j = shape.chunk_index; j <= next_shape.chunk_index; ++j) {
-                    auto src  = chunks[j].lines.segments.buffer.data();
-                    auto size = chunks[j].lines.segments.buffer.size();
-                    if (shape.chunk_index == next_shape.chunk_index) {
-                        src  = src + shape.lines.segment_buffer_start;
-                        size = next_shape.lines.segment_buffer_start - shape.lines.segment_buffer_start;
-                    } else if (j == shape.chunk_index) {
-                        src  = src + shape.lines.segment_buffer_start;
-                        size = size - shape.lines.segment_buffer_start;
-                    } else if (j == next_shape.chunk_index) {
-                        size = next_shape.lines.segment_buffer_start;
-                    }
-                    if (size) {
-                        tasks.push_back(CopyInts(dst, src, size));
-                        dst += size;
-                    }
+                if (index_size) {
+                    auto offset = AttributeInfo{ offsets[j].position, offsets[j].texcoord, offsets[j].normal };
+                    tasks.push_back(CopyIndices(index_dst, index_src, index_flags, index_size, offset, count));
+                    index_dst += index_size;
+                }
+                if (nline_size) {
+                    tasks.push_back(CopyInts(nline_dst, nline_src, nline_size));
+                    nline_dst += nline_size;
                 }
             }
         }
     }
 
-    auto positions_size = size_t{};
-    auto texcoords_size = size_t{};
-    auto normals_size   = size_t{};
+    // compute overall attribute array sizes
+    auto attribute_size = AttributeInfo{};
 
     for (const Chunk& chunk : chunks) {
-        positions_size += chunk.positions.buffer.size();
-        texcoords_size += chunk.texcoords.buffer.size();
-        normals_size += chunk.normals.buffer.size();
+        attribute_size += { chunk.positions.buffer.size(), chunk.texcoords.buffer.size(), chunk.normals.buffer.size() };
     }
 
-    auto attributes = Attributes{ { positions_size }, { texcoords_size }, { normals_size } };
+    // allocate attribute arrays
+    auto attributes = Attributes{ { attribute_size.position }, { attribute_size.texcoord }, { attribute_size.normal } };
 
+    // compute tasks to construct attribute arrays
     auto positions_destination = attributes.positions.data();
     auto texcoords_destination = attributes.texcoords.data();
     auto normals_destination   = attributes.normals.data();
 
-    // merge attributes
     for (const Chunk& chunk : chunks) {
-        // merge positions
         if (chunk.positions.buffer.size()) {
             auto dst  = positions_destination;
             auto src  = chunk.positions.buffer.data();
             auto size = chunk.positions.buffer.size();
-
             tasks.push_back(CopyFloats(dst, src, size));
-
             positions_destination += size;
         }
-        // merge texcoords
         if (chunk.texcoords.buffer.size()) {
             auto dst  = texcoords_destination;
             auto src  = chunk.texcoords.buffer.data();
             auto size = chunk.texcoords.buffer.size();
-
             tasks.push_back(CopyFloats(dst, src, size));
-
             texcoords_destination += size;
         }
-        // merge normals
         if (chunk.normals.buffer.size()) {
             auto dst  = normals_destination;
             auto src  = chunk.normals.buffer.data();
             auto size = chunk.normals.buffer.size();
-
             tasks.push_back(CopyFloats(dst, src, size));
-
             normals_destination += size;
         }
     }
 
+    // perform merge
     if (context->thread.concurrency > 1) {
         MergeParallel(&tasks, context);
     } else {
@@ -5218,11 +5146,13 @@ inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
         return Result{ Attributes{}, Shapes{}, Materials{}, Error{ error } };
     }
 
-    return Result{ std::move(attributes), std::move(shapes), std::move(result.materials), Error{} };
+    return Result{ std::move(attributes), std::move(shapes), std::move(mtllib.materials), Error{} };
 }
 
 inline rapidobj_errc ProcessLine(std::string_view line, Chunk* chunk, SharedContext* context)
 {
+    const auto text = line;
+
     TrimLeft(line);
 
     // skip empty lines
@@ -5333,7 +5263,7 @@ inline rapidobj_errc ProcessLine(std::string_view line, Chunk* chunk, SharedCont
         if (StartsWith(line, "usemtl ") || StartsWith(line, "usemtl\t")) {
             line.remove_prefix(7);
             chunk->materials.list.push_back(
-                { std::string(line), chunk->text.line_count, chunk->mesh.faces.buffer.size() });
+                { std::string(line), std::string(text), chunk->text.line_count, chunk->mesh.faces.buffer.size() });
         } else {
             return rapidobj_errc::ParseError;
         }
