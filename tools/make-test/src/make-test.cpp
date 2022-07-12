@@ -263,6 +263,35 @@ bool Compare(std::string_view intro, const T& lhs, const U& rhs, Silent silent)
     return false;
 }
 
+bool CompareColors(
+    std::string_view              intro,
+    const rapidobj::Array<float>& lhs,
+    const std::vector<float>&     rhs,
+    Silent                        silent)
+{
+    if (silent == Silent::False) {
+        std::cout << intro;
+    }
+
+    bool all_white = rhs.end() == std::find_if(rhs.begin(), rhs.end(), [](float f) { return f != 1.0f; });
+    bool is_equal  = (all_white && lhs.empty()) || (lhs == rhs);
+
+    if (is_equal) {
+        if (silent == Silent::False) {
+            std::cout << "Equal\n";
+        }
+        return true;
+    }
+
+    if (silent == Silent::False) {
+        std::cout << "Not Equal\n";
+
+        PrintDifferences(lhs.begin(), lhs.size(), rhs.begin(), rhs.size());
+    }
+
+    return false;
+}
+
 template <>
 void PrintDifferences(
     std::vector<rapidobj::Shape>::const_iterator  lhs,
@@ -642,6 +671,7 @@ int Parse(int argc, char* argv[])
         const auto& tiny_vertices  = tiny_reader.GetAttrib().vertices;
         const auto& tiny_texcoords = tiny_reader.GetAttrib().texcoords;
         const auto& tiny_normals   = tiny_reader.GetAttrib().normals;
+        const auto& tiny_colors    = tiny_reader.GetAttrib().colors;
         const auto& tiny_shapes    = tiny_reader.GetShapes();
         const auto& tiny_materials = tiny_reader.GetMaterials();
 
@@ -651,6 +681,8 @@ int Parse(int argc, char* argv[])
             Compare("Texcoord attributes:    ", rapid_result.attributes.texcoords, tiny_texcoords, Silent::False);
         bool normals_equal =
             Compare("Normal attributes:      ", rapid_result.attributes.normals, tiny_normals, Silent::False);
+        bool colors_equal =
+            CompareColors("Color attributes:       ", rapid_result.attributes.colors, tiny_colors, Silent::False);
         bool mesh_shapes_all_equal =
             Compare("Shapes:                 ", rapid_result.shapes, tiny_shapes, Silent::False);
         bool materials_all_equal =
@@ -658,7 +690,7 @@ int Parse(int argc, char* argv[])
 
         std::cout << "\n";
 
-        bool all_equal = positions_equal && texcoords_equal && normals_equal && mesh_shapes_all_equal &&
+        bool all_equal = positions_equal && texcoords_equal && normals_equal && colors_equal && mesh_shapes_all_equal &&
                          materials_all_equal;
 
         if (!all_equal) {

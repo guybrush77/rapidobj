@@ -165,6 +165,7 @@ struct Attributes final {
     Array<float> positions; // 'v'  (xyz)
     Array<float> texcoords; // 'vt' (uv)
     Array<float> normals;   // 'vn' (xyz)
+    Array<float> colors;    //  vertex color extension (see http://paulbourke.net/dataformats/obj/colour.html)
 };
 
 struct Index final {
@@ -3333,7 +3334,18 @@ struct Buffer final {
         ++m_size, --m_room;
     }
 
-    void pop_back() noexcept { --m_size, ++m_room; }
+    T pop_back() noexcept
+    {
+        --m_size, ++m_room;
+        return m_data.get()[m_size];
+    }
+
+    void fill_n(size_t n, T value)
+    {
+        std::fill_n(m_data.get() + m_size, n, value);
+        m_size += n;
+        m_room -= n;
+    }
 
     void ensure_enough_room_for(size_t size)
     {
@@ -3444,6 +3456,10 @@ struct Chunk final {
         Buffer<float> buffer{};
         size_t        count{};
     };
+    struct Colors final {
+        Buffer<float> buffer{};
+        size_t        count{};
+    };
     struct Mesh final {
         struct Indices final {
             Buffer<Index>       buffer;
@@ -3484,6 +3500,7 @@ struct Chunk final {
     Positions positions;
     Texcoords texcoords;
     Normals   normals;
+    Colors    colors;
     Mesh      mesh;
     Lines     lines;
     Points    points;
@@ -3500,6 +3517,7 @@ inline size_t SizeInBytes(const Chunk& chunk) noexcept
     size += chunk.positions.buffer.size() * sizeof(float);
     size += chunk.texcoords.buffer.size() * sizeof(float);
     size += chunk.normals.buffer.size() * sizeof(float);
+    size += chunk.colors.buffer.size() * sizeof(float);
     size += chunk.mesh.indices.buffer.size() * sizeof(Index);
     size += chunk.mesh.indices.flags.size() * sizeof(OffsetFlags);
     size += chunk.mesh.faces.buffer.size() * sizeof(unsigned char);
@@ -3524,10 +3542,13 @@ inline size_t SizeInBytes(const Mesh& mesh) noexcept
     return size;
 }
 
-template <typename T>
+template <typename>
 struct CopyElements;
 
-template <typename T>
+template <typename>
+struct FillElements;
+
+template <typename>
 struct FillIds;
 
 template <typename T>
@@ -3556,10 +3577,13 @@ using CopyBytes  = CopyElements<uint8_t>;
 using CopyInts   = CopyElements<int32_t>;
 using CopyFloats = CopyElements<float>;
 
+using FillFloats = FillElements<float>;
+
 using FillMaterialIds       = FillIds<int32_t>;
 using FillSmoothingGroupIds = FillIds<uint32_t>;
 
-using MergeTask  = std::variant<CopyBytes, CopyInts, CopyFloats, CopyIndices, FillMaterialIds, FillSmoothingGroupIds>;
+using MergeTask =
+    std::variant<CopyBytes, CopyInts, CopyFloats, CopyIndices, FillFloats, FillMaterialIds, FillSmoothingGroupIds>;
 using MergeTasks = std::vector<MergeTask>;
 
 template <typename T>
@@ -3595,6 +3619,41 @@ struct CopyElements final {
     T*       m_dst{};
     const T* m_src;
     size_t   m_size;
+};
+
+template <typename T>
+struct FillElements final {
+    FillElements(T* dst, T value, size_t size) noexcept : m_dst(dst), m_value(value), m_size(size) {}
+
+    auto Cost() const noexcept
+    {
+        constexpr auto cost = sizeof(T) == 1 ? kMergeCopyByteCost : kMergeCopyIntCost;
+        return cost * m_size;
+    }
+
+    auto Execute() const noexcept
+    {
+        std::fill_n(m_dst, m_size, m_value);
+        return rapidobj_errc::Success;
+    }
+
+    auto Subdivide(size_t num) const noexcept
+    {
+        auto begin = size_t{ 0 };
+        auto tasks = MergeTasks();
+        tasks.reserve(num);
+        for (size_t i = 0; i != num; ++i) {
+            auto end = (1 + i) * m_size / num;
+            tasks.push_back(FillElements(m_dst + begin, m_value, end - begin));
+            begin = end;
+        }
+        return tasks;
+    }
+
+  private:
+    T*      m_dst{};
+    const T m_value;
+    size_t  m_size;
 };
 
 template <typename T>
@@ -4085,6 +4144,66 @@ struct FileReader : Reader {
 
 } // namespace sys
 
+inline auto ParseXReals(std::string_view line, size_t max_count, float* out)
+{
+    size_t count = 0;
+    while (!line.empty() && count < max_count) {
+        TrimLeft(line);
+        auto [ptr, rc] = fast_float::from_chars(line.data(), line.data() + line.size(), *out);
+        if (rc != kSuccess) {
+            return std::make_pair(count, line);
+        }
+        auto num_parsed = static_cast<size_t>(ptr - line.data());
+        line.remove_prefix(num_parsed);
+        ++count;
+        ++out;
+    }
+    return std::make_pair(count, line);
+}
+
+inline auto ParseXReals(std::string_view line, size_t max_count, Buffer<float>* out)
+{
+    size_t count = 0;
+    out->ensure_enough_room_for(max_count);
+    while (!line.empty() && count < max_count) {
+        TrimLeft(line);
+        auto value     = float();
+        auto [ptr, rc] = fast_float::from_chars(line.data(), line.data() + line.size(), value);
+        if (rc != kSuccess) {
+            return std::make_pair(count, line);
+        }
+        auto num_parsed = static_cast<size_t>(ptr - line.data());
+        out->push_back(value);
+        line.remove_prefix(num_parsed);
+        ++count;
+    }
+    return std::make_pair(count, line);
+}
+
+inline auto ParseReal(std::string_view line, float* out1)
+{
+    return ParseXReals(line, 1, out1);
+}
+
+inline auto ParseReals(std::string_view line, float* out1, float* out2)
+{
+    float temp[2];
+    auto  result = ParseXReals(line, 2, temp);
+    *out1        = result.first > 0 ? temp[0] : *out1;
+    *out2        = result.first > 1 ? temp[1] : *out2;
+    return result;
+}
+
+inline auto ParseReals(std::string_view line, float* out1, float* out2, float* out3)
+{
+    float temp[3];
+    auto  result = ParseXReals(line, 3, temp);
+    *out1        = result.first > 0 ? temp[0] : *out1;
+    *out2        = result.first > 1 ? temp[1] : *out2;
+    *out3        = result.first > 2 ? temp[2] : *out3;
+    return result;
+}
+
 inline size_t ParseReals(std::string_view text, size_t max_count, float* out)
 {
     auto count = size_t{};
@@ -4278,47 +4397,6 @@ inline auto ParseFace(
     return make_pair(count, rapidobj_errc::Success);
 }
 
-inline auto ParseUnorderedRealsImplementation(std::string_view line, int max_count, float* out)
-{
-    int count = 0;
-    while (!line.empty() && count < max_count) {
-        TrimLeft(line);
-        auto [ptr, rc] = fast_float::from_chars(line.data(), line.data() + line.size(), *out);
-        if (rc != kSuccess) {
-            return std::make_pair(count, line);
-        }
-        auto num_parsed = static_cast<size_t>(ptr - line.data());
-        line.remove_prefix(num_parsed);
-        ++count;
-        ++out;
-    }
-    return std::make_pair(count, line);
-}
-
-inline auto ParseUnorderedReals(std::string_view line, float* out1)
-{
-    return ParseUnorderedRealsImplementation(line, 1, out1);
-}
-
-inline auto ParseUnorderedReals(std::string_view line, float* out1, float* out2)
-{
-    float temp[2];
-    auto  result = ParseUnorderedRealsImplementation(line, 2, temp);
-    *out1        = result.first > 0 ? temp[0] : *out1;
-    *out2        = result.first > 1 ? temp[1] : *out2;
-    return result;
-}
-
-inline auto ParseUnorderedReals(std::string_view line, float* out1, float* out2, float* out3)
-{
-    float temp[3];
-    auto  result = ParseUnorderedRealsImplementation(line, 3, temp);
-    *out1        = result.first > 0 ? temp[0] : *out1;
-    *out2        = result.first > 1 ? temp[1] : *out2;
-    *out3        = result.first > 2 ? temp[2] : *out3;
-    return result;
-}
-
 inline auto ParseTextureOption(std::string_view line, TextureOption* texture_option)
 {
     assert(texture_option);
@@ -4362,22 +4440,21 @@ inline auto ParseTextureOption(std::string_view line, TextureOption* texture_opt
                 }
             } else if (StartsWith(line, "boost ") || StartsWith(line, "boost\t")) {
                 line.remove_prefix(6);
-                auto [count, remainder] = ParseUnorderedReals(line, &texture_option->sharpness);
+                auto [count, remainder] = ParseReal(line, &texture_option->sharpness);
                 if (count != 1) {
                     return fail;
                 }
                 line = remainder;
             } else if (StartsWith(line, "mm ") || StartsWith(line, "mm\t")) {
                 line.remove_prefix(3);
-                auto [count, remainder] =
-                    ParseUnorderedReals(line, &texture_option->brightness, &texture_option->contrast);
+                auto [count, remainder] = ParseReals(line, &texture_option->brightness, &texture_option->contrast);
                 if (count != 2) {
                     return fail;
                 }
                 line = remainder;
             } else if (StartsWith(line, "o ") || StartsWith(line, "o\t")) {
                 line.remove_prefix(2);
-                auto [count, remainder] = ParseUnorderedReals(
+                auto [count, remainder] = ParseReals(
                     line,
                     &texture_option->origin_offset[0],
                     &texture_option->origin_offset[1],
@@ -4388,18 +4465,15 @@ inline auto ParseTextureOption(std::string_view line, TextureOption* texture_opt
                 line = remainder;
             } else if (StartsWith(line, "s ") || StartsWith(line, "s\t")) {
                 line.remove_prefix(2);
-                auto [count, remainder] = ParseUnorderedReals(
-                    line,
-                    &texture_option->scale[0],
-                    &texture_option->scale[1],
-                    &texture_option->scale[2]);
+                auto [count, remainder] =
+                    ParseReals(line, &texture_option->scale[0], &texture_option->scale[1], &texture_option->scale[2]);
                 if (count < 1) {
                     return fail;
                 }
                 line = remainder;
             } else if (StartsWith(line, "t ") || StartsWith(line, "t\t")) {
                 line.remove_prefix(2);
-                auto [count, remainder] = ParseUnorderedReals(
+                auto [count, remainder] = ParseReals(
                     line,
                     &texture_option->turbulence[0],
                     &texture_option->turbulence[1],
@@ -4432,7 +4506,7 @@ inline auto ParseTextureOption(std::string_view line, TextureOption* texture_opt
                 }
             } else if (StartsWith(line, "bm ") || StartsWith(line, "bm\t")) {
                 line.remove_prefix(3);
-                auto [count, remainder] = ParseUnorderedReals(line, &texture_option->bump_multiplier);
+                auto [count, remainder] = ParseReal(line, &texture_option->bump_multiplier);
                 if (count < 1) {
                     return fail;
                 }
@@ -5155,19 +5229,27 @@ inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
     }
 
     // compute overall attribute array sizes
-    auto attribute_size = AttributeInfo{};
+    auto attribute_size    = AttributeInfo{};
+    bool has_vertex_colors = false;
 
     for (const Chunk& chunk : chunks) {
         attribute_size += { chunk.positions.buffer.size(), chunk.texcoords.buffer.size(), chunk.normals.buffer.size() };
+        has_vertex_colors |= chunk.colors.count ? true : false;
     }
 
+    auto attribute_size_color = has_vertex_colors ? attribute_size.position : size_t{};
+
     // allocate attribute arrays
-    auto attributes = Attributes{ { attribute_size.position }, { attribute_size.texcoord }, { attribute_size.normal } };
+    auto attributes = Attributes{ { attribute_size.position },
+                                  { attribute_size.texcoord },
+                                  { attribute_size.normal },
+                                  { attribute_size_color } };
 
     // compute tasks to construct attribute arrays
     auto positions_destination = attributes.positions.data();
     auto texcoords_destination = attributes.texcoords.data();
     auto normals_destination   = attributes.normals.data();
+    auto colors_destination    = attributes.colors.data();
 
     for (const Chunk& chunk : chunks) {
         if (chunk.positions.buffer.size()) {
@@ -5191,6 +5273,19 @@ inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
             tasks.push_back(CopyFloats(dst, src, size));
             normals_destination += size;
         }
+        if (chunk.colors.buffer.size()) {
+            auto dst  = colors_destination;
+            auto src  = chunk.colors.buffer.data();
+            auto size = chunk.colors.buffer.size();
+            tasks.push_back(CopyFloats(dst, src, size));
+            colors_destination += size;
+        } else if (has_vertex_colors) {
+            auto dst  = colors_destination;
+            auto val  = 1.0f;
+            auto size = chunk.positions.buffer.size();
+            tasks.push_back(FillFloats(dst, val, size));
+            colors_destination += size;
+        }
     }
 
     // perform merge
@@ -5206,6 +5301,43 @@ inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
     }
 
     return Result{ std::move(attributes), std::move(shapes), std::move(mtllib.materials), Error{} };
+}
+
+inline auto ParsePosition(std::string_view line, Chunk* chunk)
+{
+    auto [count, remainder] = ParseXReals(line, 3, &chunk->positions.buffer);
+    if (count < 3) {
+        return rapidobj_errc::ParseError;
+    }
+    ++chunk->positions.count;
+    auto [count2, remainder2] = ParseXReals(remainder, 3, &chunk->colors.buffer);
+    if (count2 == 0) {
+        if (chunk->colors.buffer.size()) {
+            chunk->colors.buffer.ensure_enough_room_for(3);
+            chunk->colors.buffer.fill_n(3, 1.0f);
+            ++chunk->colors.count;
+        }
+    } else if (count2 == 3) {
+        if ((chunk->colors.buffer.size() == 3) && (chunk->positions.buffer.size() > 3)) {
+            size_t n = chunk->positions.buffer.size();
+            float  b = chunk->colors.buffer.pop_back();
+            float  g = chunk->colors.buffer.pop_back();
+            float  r = chunk->colors.buffer.pop_back();
+            chunk->colors.buffer.ensure_enough_room_for(n);
+            chunk->colors.buffer.fill_n(n - 3, 1.0f);
+            chunk->colors.buffer.push_back(r);
+            chunk->colors.buffer.push_back(g);
+            chunk->colors.buffer.push_back(b);
+        }
+        ++chunk->colors.count;
+    } else {
+        return rapidobj_errc::ParseError;
+    }
+    TrimLeft(remainder2);
+    if (!remainder2.empty()) {
+        return rapidobj_errc::ParseError;
+    }
+    return rapidobj_errc::Success;
 }
 
 inline rapidobj_errc ProcessLine(std::string_view line, Chunk* chunk, SharedContext* context)
@@ -5224,11 +5356,9 @@ inline rapidobj_errc ProcessLine(std::string_view line, Chunk* chunk, SharedCont
     case 'v': {
         if (StartsWith(line, "v ") || StartsWith(line, "v\t")) {
             line.remove_prefix(2);
-            auto count = ParseReals(line, 3, &chunk->positions.buffer);
-            if (count < 3) {
-                return rapidobj_errc::ParseError;
+            if (auto rc = ParsePosition(line, chunk); rc != rapidobj_errc::Success) {
+                return rc;
             }
-            ++chunk->positions.count;
         } else if (StartsWith(line, "vt ") || StartsWith(line, "vt\t")) {
             line.remove_prefix(3);
             auto count = ParseReals(line, 3, &chunk->texcoords.buffer);

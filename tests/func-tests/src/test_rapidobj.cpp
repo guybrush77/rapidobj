@@ -23,6 +23,24 @@ static auto MakeTestTriangulated(const std::string& path)
     return rapidobj::test::ParseTest(basepath + "/" + path, rapidobj::test::Triangulate::Yes);
 }
 
+TEST_CASE("color")
+{
+    auto test = MakeTest("color/color.obj.test");
+
+    CHECK(test.IsTestValid());
+
+    CHECK(test.IsEqualToReference());
+}
+
+TEST_CASE("color-triangulated")
+{
+    auto test = MakeTestTriangulated("color/color.obj.tri.test");
+
+    CHECK(test.IsTestValid());
+
+    CHECK(test.IsEqualToReference());
+}
+
 TEST_CASE("cube")
 {
     auto test = MakeTest("cube/cube.obj.test");
