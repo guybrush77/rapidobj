@@ -1,0 +1,8 @@
+newmtl foo
+Kd 0 0 1
+
+newmtl bar
+Kd 0 0 1
+
+newmtl baz
+Kd 0 0 1

@@ -632,10 +632,10 @@ TEST_CASE("rapidobj::detail::ParseTextureOption")
     }
 }
 
-TEST_CASE("rapidobj::detail::ParseMaterial")
+TEST_CASE("rapidobj::detail::ParseMaterials")
 {
     {
-        auto [map, materials, error] = ParseMaterial(test_material);
+        auto [map, materials, error] = ParseMaterials(test_material);
 
         CHECK(error.code == std::error_code());
 
@@ -702,7 +702,7 @@ TEST_CASE("rapidobj::detail::ParseMaterial")
     }
 
     {
-        auto [map, materials, error] = ParseMaterial(pbr_material);
+        auto [map, materials, error] = ParseMaterials(pbr_material);
 
         CHECK(error.code == std::error_code());
 
@@ -735,7 +735,7 @@ TEST_CASE("rapidobj::detail::ParseMaterial")
     }
 
     {
-        auto [map, materials, error] = ParseMaterial(bad_material_1);
+        auto [map, materials, error] = ParseMaterials(bad_material_1);
 
         CHECK(error.code == rapidobj_errc::MaterialParseError);
         CHECK(error.line == "$%!*");
@@ -743,7 +743,7 @@ TEST_CASE("rapidobj::detail::ParseMaterial")
     }
 
     {
-        auto [map, materials, error] = ParseMaterial(bad_material_2);
+        auto [map, materials, error] = ParseMaterials(bad_material_2);
 
         CHECK(error.code == rapidobj_errc::MaterialParseError);
         CHECK(error.line == "illum 3 foo");
