@@ -77,6 +77,41 @@ static constexpr struct {
     int Patch;
 } Version = { RAPIDOBJ_VERSION_MAJOR, RAPIDOBJ_VERSION_MINOR, RAPIDOBJ_VERSION_PATCH };
 
+enum class Load { Mandatory, Optional };
+
+struct MaterialLibrary final {
+    static MaterialLibrary Default(Load policy = Load::Mandatory) { return MaterialLibrary({ "." }, policy); }
+
+    static MaterialLibrary SearchPath(std::filesystem::path path, Load policy = Load::Mandatory)
+    {
+        return MaterialLibrary({ std::move(path) }, policy);
+    }
+
+    static MaterialLibrary SearchPaths(std::vector<std::filesystem::path> paths, Load policy = Load::Mandatory)
+    {
+        return MaterialLibrary(std::move(paths), policy);
+    }
+
+    static MaterialLibrary String(std::string_view text) { return MaterialLibrary(text); }
+
+    static MaterialLibrary Ignore() { return MaterialLibrary(); }
+
+    const auto& Value() const noexcept { return m_value; }
+    auto        Policy() const noexcept { return m_policy; }
+
+  private:
+    MaterialLibrary() noexcept = default;
+    MaterialLibrary(std::vector<std::filesystem::path>&& paths, Load policy) noexcept
+        : m_value(std::move(paths)), m_policy(policy)
+    {}
+    MaterialLibrary(std::string_view text) noexcept : m_value(text) {}
+
+    using Variant = std::variant<std::monostate, std::vector<std::filesystem::path>, std::string_view>;
+
+    Variant m_value{};
+    Load    m_policy{};
+};
+
 template <typename T>
 class Array final {
   public:
@@ -291,7 +326,9 @@ struct [[nodiscard]] Result final {
     Error      error;
 };
 
-inline Result ParseFile(const std::filesystem::path& obj_filepath, const std::filesystem::path& mtl_filepath = {});
+inline Result ParseFile(
+    const std::filesystem::path& obj_filepath,
+    const MaterialLibrary&       mtl_library = MaterialLibrary::Default());
 
 inline bool Triangulate(Result& result);
 
@@ -3396,7 +3433,7 @@ struct MaterialRecord final {
 
 using MaterialMap = std::map<std::string, int>;
 
-struct ParseMaterialFileResult final {
+struct ParseMaterialsResult final {
     MaterialMap material_map;
     Materials   materials;
     Error       error;
@@ -3419,11 +3456,11 @@ struct SharedContext final {
     } stats;
 
     struct Material final {
-        std::filesystem::path                filepath{};
-        bool                                 is_file{};
-        std::string                          library_name{};
-        std::future<ParseMaterialFileResult> parse_result{};
-        std::mutex                           mutex{}; // protects library_name and parse_result
+        const MaterialLibrary*            library{};
+        std::filesystem::path             basepath{};
+        std::string                       library_name{};
+        std::future<ParseMaterialsResult> parse_result{};
+        std::mutex                        mutex{}; // protects library_name and parse_result
     } material;
 
     struct Parsing final {
@@ -4558,7 +4595,7 @@ inline auto ParseTextureOption(std::string_view line, TextureOption* texture_opt
     return std::make_pair(line, true);
 }
 
-inline ParseMaterialFileResult ParseMaterial(std::string_view text)
+inline ParseMaterialsResult ParseMaterials(std::string_view text)
 {
     auto material_map = MaterialMap{};
     auto material_id  = 0;
@@ -4807,17 +4844,41 @@ inline ParseMaterialFileResult ParseMaterial(std::string_view text)
     return { std::move(material_map), std::move(materials), Error{} };
 }
 
-inline auto ParseMaterialFile(std::filesystem::path filepath)
+inline auto FindBestPath(SharedContext* context)
 {
-    if (!std::filesystem::exists(filepath)) {
-        return ParseMaterialFileResult{ {}, {}, Error{ make_error_code(rapidobj_errc::MaterialFileError) } };
+    const auto& basepath = context->material.basepath;
+    const auto& paths    = std::get<std::vector<std::filesystem::path>>(context->material.library->Value());
+
+    for (const auto& path : paths) {
+        auto bestpath = path.is_absolute() ? path : (basepath / path);
+        if (std::filesystem::is_directory(bestpath)) {
+            bestpath /= context->material.library_name;
+        }
+        if (std::filesystem::exists(bestpath) && std::filesystem::is_regular_file(bestpath)) {
+            return bestpath;
+        }
+    }
+
+    return std::filesystem::path();
+}
+
+inline auto ParseMaterialLibrary(SharedContext* context)
+{
+    if (std::holds_alternative<std::string_view>(context->material.library->Value())) {
+        return ParseMaterials(std::get<std::string_view>(context->material.library->Value()));
+    }
+
+    auto filepath = FindBestPath(context);
+
+    if (filepath.empty()) {
+        return ParseMaterialsResult{ {}, {}, Error{ make_error_code(rapidobj_errc::MaterialFileError) } };
     }
 
     auto file = std::ifstream(filepath, std::ios::in | std::ios::binary | std::ios::ate);
 
     auto filesize = file.tellg();
     if (filesize <= 0) {
-        return ParseMaterialFileResult{ {}, {}, Error{ std::make_error_code(std::io_errc::stream) } };
+        return ParseMaterialsResult{ {}, {}, Error{ std::make_error_code(std::io_errc::stream) } };
     }
     file.seekg(0, std::ios::beg);
 
@@ -4825,13 +4886,11 @@ inline auto ParseMaterialFile(std::filesystem::path filepath)
     if (file.is_open()) {
         file.read(filedata.data(), filesize);
     } else {
-        return ParseMaterialFileResult{ {}, {}, Error{ std::make_error_code(std::io_errc::stream) } };
+        return ParseMaterialsResult{ {}, {}, Error{ std::make_error_code(std::io_errc::stream) } };
     }
     file.close();
 
-    auto text = std::string_view(filedata.data(), static_cast<size_t>(filesize));
-
-    return ParseMaterial(text);
+    return ParseMaterials(std::string_view(filedata.data(), static_cast<size_t>(filesize)));
 }
 
 inline void DispatchMergeTasks(const std::vector<MergeTask>& tasks, SharedContext* context)
@@ -5010,15 +5069,29 @@ inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
         smoothing_src.push_back({ 0, list_info.face_buffers_size });
     }
 
-    const auto& mtllib = context->material.parse_result.valid() ? context->material.parse_result.get()
-                                                                : ParseMaterialFileResult{};
-    if (mtllib.error.code) {
-        return Result{ Attributes{}, Shapes{}, Materials{}, { mtllib.error.code } };
+    auto parsed_materials = ParseMaterialsResult{};
+
+    if (context->material.parse_result.valid()) {
+        parsed_materials = context->material.parse_result.get();
+        if (parsed_materials.error.code) {
+            if (context->material.library->Policy() == Load::Optional) {
+                parsed_materials = {};
+                int id           = 0;
+                for (const Chunk& chunk : chunks) {
+                    for (const MaterialRecord& record : chunk.materials.list) {
+                        auto [it, emplaced] = parsed_materials.material_map.try_emplace(std::string(record.name), id);
+                        id += emplaced ? 1 : 0;
+                    }
+                }
+            } else {
+                return Result{ Attributes{}, Shapes{}, Materials{}, { parsed_materials.error.code } };
+            }
+        }
     }
 
     // prepare material-source list from per-chunk material-record lists
     auto material_src = std::vector<FillSrc<int32_t>>();
-    {
+    if (context->material.library) {
         material_src.reserve(list_info.material_offsets_size + 2);
         material_src.push_back({ -1, 0 });
         for (size_t i = 0; i != chunks.size(); ++i) {
@@ -5028,7 +5101,8 @@ inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
                         material_src.pop_back();
                     }
                 }
-                if (auto it = mtllib.material_map.find(record.name); it != mtllib.material_map.end()) {
+                auto it = parsed_materials.material_map.find(record.name);
+                if (it != parsed_materials.material_map.end()) {
                     material_src.push_back({ it->second, record.face_buffer_start + offsets[i].face });
                 } else {
                     auto line_num = record.line_num;
@@ -5095,13 +5169,18 @@ inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
             continue;
         }
 
+        auto num_indices       = shape_info.mesh.index_array_size;
+        auto num_faces         = shape_info.mesh.faces_array_size;
+        auto num_material_ids  = context->material.library ? num_faces : 0;
+        auto num_smoothing_ids = num_faces;
+
         // allocate Shape
         shapes.push_back(Shape{
             std::move(shape.name),
-            Mesh{ Array<Index>(shape_info.mesh.index_array_size),
-                  Array<uint8_t>(shape_info.mesh.faces_array_size),
-                  Array<int32_t>(shape_info.mesh.faces_array_size),
-                  Array<uint32_t>(shape_info.mesh.faces_array_size) },
+            Mesh{ Array<Index>(num_indices),
+                  Array<uint8_t>(num_faces),
+                  Array<int32_t>(num_material_ids),
+                  Array<uint32_t>(num_smoothing_ids) },
             Lines{ Array<Index>(shape_info.line.index_array_size), Array<int32_t>(shape_info.line.segment_array_size) },
             Points{ Array<Index>(shape_info.point.index_array_size) } });
 
@@ -5146,7 +5225,7 @@ inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
                 }
             }
             // compute material id fills
-            {
+            if (!material_src.empty()) {
                 auto dst   = shapes.back().mesh.material_ids.begin();
                 auto size  = shape_info.mesh.faces_array_size;
                 auto start = shape.mesh.face_buffer_start + offsets[shape.chunk_index].face;
@@ -5300,7 +5379,7 @@ inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
         return Result{ Attributes{}, Shapes{}, Materials{}, Error{ error } };
     }
 
-    return Result{ std::move(attributes), std::move(shapes), std::move(mtllib.materials), Error{} };
+    return Result{ std::move(attributes), std::move(shapes), std::move(parsed_materials.materials), Error{} };
 }
 
 inline auto ParsePosition(std::string_view line, Chunk* chunk)
@@ -5423,26 +5502,24 @@ inline rapidobj_errc ProcessLine(std::string_view line, Chunk* chunk, SharedCont
     }
     case 'm': {
         if (StartsWith(line, "mtllib ") || StartsWith(line, "mtllib\t")) {
-            line.remove_prefix(7);
-            Trim(line);
-            bool ambiguous_material_library = false;
-            if (context->material.library_name.empty()) {
-                std::lock_guard lock(context->material.mutex);
+            if (context->material.library) {
+                line.remove_prefix(7);
+                Trim(line);
+                bool ambiguous_material_library = false;
                 if (context->material.library_name.empty()) {
-                    context->material.library_name = line;
-                    auto filepath                  = context->material.filepath;
-                    if (!context->material.is_file) {
-                        filepath = filepath / line;
+                    std::lock_guard lock(context->material.mutex);
+                    if (context->material.library_name.empty()) {
+                        context->material.library_name = line;
+                        context->material.parse_result = std::async(std::launch::async, ParseMaterialLibrary, context);
+                    } else if (context->material.library_name != line) {
+                        ambiguous_material_library = true;
                     }
-                    context->material.parse_result = std::async(std::launch::async, ParseMaterialFile, filepath);
                 } else if (context->material.library_name != line) {
                     ambiguous_material_library = true;
                 }
-            } else if (context->material.library_name != line) {
-                ambiguous_material_library = true;
-            }
-            if (ambiguous_material_library) {
-                return rapidobj_errc::AmbiguousMaterialLibraryError;
+                if (ambiguous_material_library) {
+                    return rapidobj_errc::AmbiguousMaterialLibraryError;
+                }
             }
         } else {
             return rapidobj_errc::ParseError;
@@ -5451,9 +5528,11 @@ inline rapidobj_errc ProcessLine(std::string_view line, Chunk* chunk, SharedCont
     }
     case 'u': {
         if (StartsWith(line, "usemtl ") || StartsWith(line, "usemtl\t")) {
-            line.remove_prefix(7);
-            chunk->materials.list.push_back(
-                { std::string(line), std::string(text), chunk->text.line_count, chunk->mesh.faces.buffer.size() });
+            if (context->material.library) {
+                line.remove_prefix(7);
+                chunk->materials.list.push_back(
+                    { std::string(line), std::string(text), chunk->text.line_count, chunk->mesh.faces.buffer.size() });
+            }
         } else {
             return rapidobj_errc::ParseError;
         }
@@ -5758,7 +5837,7 @@ inline void ParseFileParallel(sys::File* file, std::vector<Chunk>* chunks, Share
     context->parsing.completed.get_future().wait();
 }
 
-inline Result ParseFile(const std::filesystem::path& filepath, const std::filesystem::path& mtl_filepath)
+inline Result ParseFile(const std::filesystem::path& filepath, const MaterialLibrary& mtllib)
 {
     if (filepath.empty()) {
         auto error = std::make_error_code(std::errc::invalid_argument);
@@ -5773,8 +5852,11 @@ inline Result ParseFile(const std::filesystem::path& filepath, const std::filesy
 
     auto context = SharedContext{};
 
-    context.material.filepath = mtl_filepath.is_absolute() ? mtl_filepath : filepath.parent_path() / mtl_filepath;
-    context.material.is_file  = context.material.filepath.extension() == ".mtl";
+    context.material.library = std::holds_alternative<std::monostate>(mtllib.Value()) ? nullptr : &mtllib;
+
+    if (std::holds_alternative<std::vector<std::filesystem::path>>(mtllib.Value())) {
+        context.material.basepath = filepath.parent_path();
+    }
 
     auto chunks = std::vector<Chunk>();
 
@@ -6196,12 +6278,12 @@ inline bool Triangulate(Result& result)
 /// <summary>
 /// Loads and parses Wavefront geometry definition file (.obj file).
 /// </summary>
-/// <param name="obj_filepath">- Path to the .obj file to parse.</param>
-/// <param name="mtl_filepath">- Optional path to .mtl file.</param>
+/// <param name="obj_filepath">- Path of the .obj file to parse.</param>
+/// <param name="mtl_library">- Optional material library.</param>
 /// <returns>Parsed data stored in Result class.</returns>
-inline Result ParseFile(const std::filesystem::path& obj_filepath, const std::filesystem::path& mtl_filepath)
+inline Result ParseFile(const std::filesystem::path& obj_filepath, const MaterialLibrary& mtl_library)
 {
-    return detail::ParseFile(obj_filepath, mtl_filepath);
+    return detail::ParseFile(obj_filepath, mtl_library);
 }
 
 inline bool Triangulate(Result& result)
