@@ -29,6 +29,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 #include <cassert>
 #include <cfloat>
 #include <charconv>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <future>
@@ -3232,6 +3233,11 @@ inline std::error_code make_error_code(rapidobj_errc err)
 
 namespace detail {
 
+constexpr std::size_t operator"" _GiB(unsigned long long int gibibytes) noexcept
+{
+    return static_cast<std::size_t>(1024 * 1024 * 1024 * gibibytes);
+}
+
 constexpr std::size_t operator"" _MiB(unsigned long long int mebibytes) noexcept
 {
     return static_cast<std::size_t>(1024 * 1024 * mebibytes);
@@ -3475,6 +3481,21 @@ struct SharedContext final {
         rapidobj_errc      error{};
         std::mutex         mutex{}; // protects error
     } merging;
+
+    struct Debug final {
+        struct IO final {
+            std::vector<int>                      n_requests{};
+            std::vector<std::chrono::nanoseconds> submit_time;
+            std::vector<std::chrono::nanoseconds> wait_time;
+        } io;
+        struct Parse final {
+            std::vector<std::chrono::nanoseconds> time;
+            std::chrono::nanoseconds              total_time;
+        } parse;
+        struct Merge final {
+            std::chrono::nanoseconds total_time;
+        } merge;
+    } debug;
 };
 
 struct Chunk final {
@@ -3839,10 +3860,16 @@ struct Reader {
     virtual std::error_code ReadBlock(size_t offset, size_t size, char* buffer) = 0;
     virtual ReadResult      WaitForResult()                                     = 0;
 
-    std::error_code Error() const noexcept { return m_error; }
+    auto NumRequests() const noexcept { return m_num_requests; }
+    auto SubmitTime() const noexcept { return m_submit_time; }
+    auto WaitTime() const noexcept { return m_wait_time; }
+    auto Error() const noexcept { return m_error; }
 
   protected:
-    std::error_code m_error{};
+    int                      m_num_requests{};
+    std::chrono::nanoseconds m_submit_time{};
+    std::chrono::nanoseconds m_wait_time{};
+    std::error_code          m_error{};
 };
 
 namespace sys {
@@ -3915,32 +3942,37 @@ struct FileReader : Reader {
         assert(m_fd != -1);
         assert(std::uintptr_t(buffer) % 4096 == 0);
 
+        ++m_num_requests;
+
+        auto t1 = std::chrono::steady_clock::now();
+
         io_prep_pread(&m_request, m_fd, buffer, size, static_cast<long long>(offset));
 
-        auto ptr_iocb = &m_request;
-
+        auto ptr_iocb      = &m_request;
         auto num_submitted = io_submit(m_context, 1, &ptr_iocb);
 
-        if (num_submitted != 1) {
-            auto rc = -num_submitted;
-            return std::make_error_code(static_cast<std::errc>(rc));
-        }
+        auto ec = (num_submitted == 1) ? std::error_code() : std::make_error_code(std::errc::io_error);
 
-        return std::error_code();
+        auto t2 = std::chrono::steady_clock::now();
+
+        m_submit_time += t2 - t1;
+
+        return ec;
     }
 
     ReadResult WaitForResult() override
     {
-        auto event = io_event{};
+        auto t1 = std::chrono::steady_clock::now();
 
+        auto event      = io_event{};
         auto num_events = io_getevents(m_context, 1, 1, &event, nullptr);
+        auto ec         = (num_events == 1) ? std::error_code() : std::make_error_code(std::errc::io_error);
 
-        if (num_events < 1) {
-            auto rc = -num_events;
-            return { size_t{}, std::make_error_code(static_cast<std::errc>(rc)) };
-        }
+        auto t2 = std::chrono::steady_clock::now();
 
-        return { static_cast<size_t>(event.res), std::error_code() };
+        m_wait_time += t2 - t1;
+
+        return ReadResult{ event.res, ec };
     }
 
   private:
@@ -4038,19 +4070,28 @@ struct FileReader : Reader {
         assert(m_handle && m_handle != INVALID_HANDLE_VALUE);
         assert(m_file && m_file != INVALID_HANDLE_VALUE);
 
+        ++m_num_requests;
+
+        auto t1 = std::chrono::steady_clock::now();
+
         m_overlapped.hEvent     = m_handle;
         m_overlapped.Offset     = static_cast<DWORD>(offset);
         m_overlapped.OffsetHigh = static_cast<DWORD>(offset >> 32);
 
-        auto success = ReadFile(m_file, buffer, static_cast<DWORD>(size), nullptr, &m_overlapped);
+        auto error   = std::error_code();
+        bool success = ReadFile(m_file, buffer, static_cast<DWORD>(size), nullptr, &m_overlapped);
 
-        auto error = success ? ERROR_SUCCESS : static_cast<int>(GetLastError());
-
-        if (error == ERROR_SUCCESS || error == ERROR_IO_PENDING) {
-            return std::error_code();
+        if (!success) {
+            if (auto ec = GetLastError(); ec != ERROR_IO_PENDING) {
+                error = std::error_code(ec, std::system_category());
+            }
         }
 
-        return std::error_code(error, std::system_category());
+        auto t2 = std::chrono::steady_clock::now();
+
+        m_submit_time += t2 - t1;
+
+        return error;
     }
 
     ReadResult WaitForResult() override
@@ -4058,19 +4099,24 @@ struct FileReader : Reader {
         assert(m_handle && m_handle != INVALID_HANDLE_VALUE);
         assert(m_file && m_file != INVALID_HANDLE_VALUE);
 
+        auto t1 = std::chrono::steady_clock::now();
+
         auto bytes_read = DWORD{};
+        auto error      = std::error_code();
+        bool success    = GetOverlappedResult(m_handle, &m_overlapped, &bytes_read, TRUE);
 
-        if (GetOverlappedResult(m_handle, &m_overlapped, &bytes_read, TRUE)) {
-            return { static_cast<std::size_t>(bytes_read), std::error_code() };
+        if (!success) {
+            if (auto ec = GetLastError(); ec != ERROR_HANDLE_EOF) {
+                bytes_read = 0;
+                error      = std::error_code(ec, std::system_category());
+            }
         }
 
-        auto error = static_cast<int>(GetLastError());
+        auto t2 = std::chrono::steady_clock::now();
 
-        if (error == ERROR_HANDLE_EOF) {
-            return { static_cast<std::size_t>(bytes_read), std::error_code() };
-        }
+        m_wait_time += t2 - t1;
 
-        return { std::size_t{}, std::error_code(error, std::system_category()) };
+        return { bytes_read, error };
     }
 
   private:
@@ -4142,6 +4188,12 @@ struct FileReader : Reader {
         assert(buffer);
         assert(std::uintptr_t(buffer) % 4096 == 0);
 
+        ++m_num_requests;
+
+        auto t1 = std::chrono::steady_clock::now();
+
+        auto error = std::error_code();
+
         m_offset = offset;
         m_size = size;
         m_buffer = buffer;
@@ -4153,21 +4205,33 @@ struct FileReader : Reader {
         auto result = fcntl(m_fd, F_RDADVISE, &args);
 
         if (result == -1) {
-            return std::error_code(errno, std::system_category());
+            error = std::error_code(errno, std::system_category());
         }
 
-        return std::error_code();
+        auto t2 = std::chrono::steady_clock::now();
+
+        m_submit_time += t2 - t1;
+
+        return error;
     }
 
     ReadResult WaitForResult() override
     {
+        auto t1 = std::chrono::steady_clock::now();
+
         auto n_bytes_read = pread(m_fd, m_buffer, m_size, m_offset);
+        auto error        = std::error_code();
 
         if (n_bytes_read == -1) {
-            return { size_t{}, std::error_code(errno, std::system_category()) };
+            n_bytes_read = 0;
+            error = std::error_code(errno, std::system_category());
         }
 
-        return { static_cast<size_t>(n_bytes_read), std::error_code() };
+        auto t2 = std::chrono::steady_clock::now();
+
+        m_wait_time += t2 - t1;
+
+        return { static_cast<size_t>(n_bytes_read), error };
     }
 
   private:
@@ -4180,6 +4244,178 @@ struct FileReader : Reader {
 #endif
 
 } // namespace sys
+
+inline std::string ToString(std::chrono::nanoseconds time, int width = 0)
+{
+    auto text = std::string();
+    if (time.count() > 19'000'000'000) {
+        text = std::to_string(time.count() / 1'000'000'000);
+        text.append(" s");
+    } else if (time.count() > 19'000'000) {
+        text = std::to_string(time.count() / 1'000'000);
+        text.append(" ms");
+    } else if (time.count() > 19'000) {
+        text = std::to_string(time.count() / 1'000);
+        text.append(" us");
+    } else {
+        text = std::to_string(time.count());
+        text.append(" ns");
+    }
+    auto n = width - static_cast<int>(text.size());
+    if (n > 0) {
+        text.insert(0, n, ' ');
+    }
+    return text;
+}
+
+inline std::string ToString(size_t i, int width = 0)
+{
+    auto text = std::to_string(i);
+    auto n    = width - static_cast<int>(text.size());
+    if (n > 0) {
+        text.insert(0, n, ' ');
+    }
+    return text;
+}
+
+inline std::string RateToString(double bytes_per_second, int width = 0)
+{
+    const char* unit = " B/s";
+
+    if (bytes_per_second > 99_GiB) {
+        bytes_per_second /= 1_GiB;
+        unit = " GB/s";
+    } else if (bytes_per_second > 99_MiB) {
+        bytes_per_second /= 1_MiB;
+        unit = " MB/s";
+    } else if (bytes_per_second > 99_KiB) {
+        bytes_per_second /= 1_KiB;
+        unit = " KB/s";
+    }
+
+    auto text = std::to_string(static_cast<int>(bytes_per_second));
+    text.append(unit);
+    auto n = width - static_cast<int>(text.size());
+    if (n > 0) {
+        text.insert(0, n, ' ');
+    }
+    return text;
+}
+
+inline std::string ComputeDebugStats(const std::vector<std::chrono::nanoseconds>& population) noexcept
+{
+    auto text = std::string();
+
+    auto min_time  = std::chrono::nanoseconds{ std::chrono::nanoseconds::max() };
+    auto max_time  = std::chrono::nanoseconds{ std::chrono::nanoseconds::min() };
+    auto min_index = size_t{};
+    auto max_index = size_t{};
+    auto avg_time  = std::chrono::nanoseconds{};
+    auto stddev    = std::chrono::nanoseconds{};
+
+    for (size_t i = 0; i != population.size(); ++i) {
+        auto sample = population[i];
+        if (sample < min_time) {
+            min_time  = sample;
+            min_index = i;
+        }
+        if (sample > max_time) {
+            max_time  = sample;
+            max_index = i;
+        }
+        avg_time += sample;
+    }
+
+    avg_time /= population.size();
+
+    int64_t sq_sum{};
+
+    for (size_t i = 0; i != population.size(); ++i) {
+        auto sample = population[i];
+        auto diff   = (sample - avg_time).count();
+        sq_sum += diff * diff;
+    }
+
+    auto std_dev = std::chrono::nanoseconds(static_cast<int64_t>(std::sqrt(sq_sum / population.size())));
+
+    text.append("min: ").append(ToString(min_time, 10));
+    text.append(" [#").append(std::to_string(min_index + 1)).append("]\n");
+    text.append("max: ").append(ToString(max_time, 10));
+    text.append(" [#").append(std::to_string(max_index + 1)).append("]\n");
+    text.append("avg: ").append(ToString(avg_time, 10)).append("\n");
+    text.append("std: ").append(ToString(std_dev, 10)).append("\n");
+
+    return text;
+}
+
+inline std::string DumpDebug(const sys::File& file, const SharedContext& context)
+{
+    auto text = std::string();
+
+    auto population = std::vector<std::chrono::nanoseconds>(context.debug.io.n_requests.size());
+
+    for (size_t i = 0; i != context.debug.io.n_requests.size(); ++i) {
+        auto n          = context.debug.io.n_requests[i];
+        auto submit_ns  = context.debug.io.submit_time[i];
+        auto wait_ns    = context.debug.io.wait_time[i];
+        auto total_ns   = submit_ns.count() + wait_ns.count();
+        auto average_ns = total_ns / n;
+        auto thread     = ToString(i + 1, 3);
+        auto requests   = ToString(n, 5);
+        auto submit     = ToString(std::chrono::nanoseconds(submit_ns), 9);
+        auto wait       = ToString(std::chrono::nanoseconds(wait_ns), 9);
+        auto total      = ToString(std::chrono::nanoseconds(total_ns), 9);
+        auto average    = ToString(std::chrono::nanoseconds(average_ns), 9);
+
+        population[i] = std::chrono::nanoseconds{ total_ns };
+
+        text.append(thread);
+        text.append(": blk").append(requests);
+        text.append("    read").append(submit);
+        text.append("    wait").append(wait);
+        text.append("    sum").append(total);
+        text.append("    avg").append(average);
+        text.push_back('\n');
+    }
+
+    text.push_back('\n');
+    text.append(ComputeDebugStats(population));
+    text.push_back('\n');
+
+    for (size_t i = 0; i != context.debug.io.n_requests.size(); ++i) {
+        auto parse_ns      = context.debug.parse.time[i];
+        auto io_ns         = context.debug.io.submit_time[i] + context.debug.io.wait_time[i];
+        auto io_percentage = static_cast<int>(0.5f + 100.0f * io_ns.count() / parse_ns.count());
+        auto thread        = ToString(i + 1, 3);
+        auto parse         = ToString(parse_ns, 9);
+
+        population[i] = parse_ns;
+
+        text.append(thread).append(": parse").append(parse);
+        text.append("  (").append(std::to_string(io_percentage)).append("% io)\n");
+    }
+
+    text.push_back('\n');
+    text.append(ComputeDebugStats(population));
+    text.push_back('\n');
+
+    auto parse_total      = context.debug.parse.total_time;
+    auto merge_total      = context.debug.merge.total_time;
+    auto total            = parse_total + merge_total;
+    auto parse_percentage = static_cast<int>(0.5f + 100.0f * parse_total.count() / total.count());
+    auto merge_percentage = 100 - parse_percentage;
+    auto bytes_per_second = file.size() / (parse_total.count() / 1000'000'000.0);
+
+    text.append("Parse Time: ");
+    text.append(ToString(parse_total, 10));
+    text.append(" (").append(std::to_string(parse_percentage)).append("%)\n");
+    text.append("Merge Time: ");
+    text.append(ToString(merge_total, 10));
+    text.append(" (").append(std::to_string(merge_percentage)).append("%)\n");
+    text.append("Parse Rate: ").append(RateToString(bytes_per_second, 12)).append("\n");
+
+    return text;
+}
 
 inline auto ParseXReals(std::string_view line, size_t max_count, float* out)
 {
@@ -5746,6 +5982,7 @@ inline void ProcessBlocksImpl(
 
 inline void ProcessBlocks(
     sys::File*     file,
+    size_t         thread_index,
     size_t         block_begin,
     size_t         block_end,
     size_t         bytes_per_block,
@@ -5759,6 +5996,8 @@ inline void ProcessBlocks(
     assert(block_begin < block_end);
     assert(bytes_per_block > 0);
 
+    auto t1 = std::chrono::steady_clock::now();
+
     auto reader = sys::FileReader(*file);
 
     if (reader.Error()) {
@@ -5770,6 +6009,15 @@ inline void ProcessBlocks(
     if (1 == std::atomic_fetch_sub(&context->parsing.thread_count, size_t(1))) {
         context->parsing.completed.set_value();
     }
+
+    auto t2 = std::chrono::steady_clock::now();
+
+    auto parse_time = t2 - t1;
+
+    context->debug.io.n_requests[thread_index]  = reader.NumRequests();
+    context->debug.io.submit_time[thread_index] = reader.SubmitTime();
+    context->debug.io.wait_time[thread_index]   = reader.WaitTime();
+    context->debug.parse.time[thread_index]     = parse_time;
 }
 
 inline void ParseFileSequential(sys::File* file, std::vector<Chunk>* chunks, SharedContext* context)
@@ -5779,11 +6027,16 @@ inline void ParseFileSequential(sys::File* file, std::vector<Chunk>* chunks, Sha
 
     chunks->resize(1);
 
+    context->debug.io.n_requests.resize(1);
+    context->debug.io.submit_time.resize(1);
+    context->debug.io.wait_time.resize(1);
+    context->debug.parse.time.resize(1);
+
     auto num_blocks             = file->size() / kBlockSize + (file->size() % kBlockSize != 0);
     auto stop_parsing_after_eol = false;
     auto chunk                  = &chunks->front();
 
-    ProcessBlocks(file, 0, num_blocks, kBlockSize, stop_parsing_after_eol, chunk, context);
+    ProcessBlocks(file, 0, 0, num_blocks, kBlockSize, stop_parsing_after_eol, chunk, context);
 }
 
 inline void ParseFileParallel(sys::File* file, std::vector<Chunk>* chunks, SharedContext* context)
@@ -5819,6 +6072,11 @@ inline void ParseFileParallel(sys::File* file, std::vector<Chunk>* chunks, Share
 
     chunks->resize(num_tasks);
 
+    context->debug.io.n_requests.resize(num_threads);
+    context->debug.io.submit_time.resize(num_threads);
+    context->debug.io.wait_time.resize(num_threads);
+    context->debug.parse.time.resize(num_threads);
+
     threads.reserve(num_tasks);
 
     // allocate tasks to threads
@@ -5829,7 +6087,7 @@ inline void ParseFileParallel(sys::File* file, std::vector<Chunk>* chunks, Share
         bool stop_parsing_after_eol = !is_last;
         auto chunk                  = &(*chunks)[i];
 
-        threads.emplace_back(ProcessBlocks, file, begin, end, kBlockSize, stop_parsing_after_eol, chunk, context);
+        threads.emplace_back(ProcessBlocks, file, i, begin, end, kBlockSize, stop_parsing_after_eol, chunk, context);
         threads.back().detach();
     }
 
@@ -5860,11 +6118,17 @@ inline Result ParseFile(const std::filesystem::path& filepath, const MaterialLib
 
     auto chunks = std::vector<Chunk>();
 
+    auto t1 = std::chrono::steady_clock::now();
+
     if (file.size() <= kSingleThreadCutoff) {
         ParseFileSequential(&file, &chunks, &context);
     } else {
         ParseFileParallel(&file, &chunks, &context);
     }
+
+    auto t2 = std::chrono::steady_clock::now();
+
+    context.debug.parse.total_time = t2 - t1;
 
     // check if an error occured
     size_t running_line_num = size_t{};
@@ -5876,7 +6140,15 @@ inline Result ParseFile(const std::filesystem::path& filepath, const MaterialLib
         running_line_num += chunk.text.line_count;
     }
 
+    t1 = std::chrono::steady_clock::now();
+
     auto result = Merge(chunks, &context);
+
+    t2 = std::chrono::steady_clock::now();
+
+    context.debug.merge.total_time = t2 - t1;
+
+    //std::cout << DumpDebug(file, context);
 
     auto memory = size_t{ 0 };
 
