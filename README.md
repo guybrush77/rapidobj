@@ -37,18 +37,6 @@ You will need a C++ compiler that fully supports C++17 standard. In practice, th
 
 If you intend to use CMake as your build system, you will need to install CMake version 3.20 or higher.
 
-If building on Linux, make sure to first install _libaio_ library and its header files. On Debian:
-
-```bash
-sudo apt install libaio-dev
-```
-
-On RHEL or Fedora:
-
-```bash
-sudo yum install libaio-devel
-```
-
 ### Manual Integration
 
 The simplest way to integrate the library in your project is to copy the header file, ```rapidobj.hpp```, to a location that is in your compiler's include path. To use the library from your application, include the header file:
@@ -59,10 +47,10 @@ The simplest way to integrate the library in your project is to copy the header 
 
 To compile your project, make sure to use the C++17 switch (```-std=c++17``` for g++ and clang, ```/std:c++17``` for MSVC).
 
-There are some extra considerations when building a Linux project: you need to link your application against _libpthread_ and _libaio_ libraries. For example, assuming g++ compiler:
+There are some extra considerations when building a Linux project: you need to link your application against _libpthread_ library. For example, assuming g++ compiler:
 
 ```bash
-g++ -std=c++17 my_src.cpp -pthread -laio -o my_app
+g++ -std=c++17 my_src.cpp -pthread -o my_app
 ```
 
 > :page_facing_up: If you are using gcc version 8, you also have to link against the _stdc++fs_ library (_std::filesystem_ used by RapidObj is not part of _libstdc++_ until gcc version 9).

@@ -30,6 +30,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 #include <cfloat>
 #include <charconv>
 #include <cmath>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <future>
@@ -43,7 +44,6 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 #ifdef __linux__
 
 #include <fcntl.h>
-#include <libaio.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -3896,7 +3896,7 @@ class File final {
             return;
         }
 
-        m_fd = open(filepath_string.c_str(), O_DIRECT, O_RDONLY);
+        m_fd = open(filepath_string.c_str(), O_RDONLY);
 
         if (-1 == m_fd) {
             m_error = std::error_code(errno, std::system_category());
@@ -3925,16 +3925,7 @@ class File final {
 };
 
 struct FileReader : Reader {
-    FileReader(const File& file) : m_fd{ file.handle() }
-    {
-        assert(m_fd != -1);
-
-        if (auto rc = io_setup(1, &m_context); rc < 0) {
-            m_error = std::make_error_code(static_cast<std::errc>(-rc));
-        }
-    }
-
-    ~FileReader() noexcept override { io_destroy(m_context); }
+    FileReader(const File& file) noexcept : m_fd{ file.handle() } {}
 
     std::error_code ReadBlock(size_t offset, size_t size, char* buffer) override
     {
@@ -3946,39 +3937,38 @@ struct FileReader : Reader {
 
         auto t1 = std::chrono::steady_clock::now();
 
-        io_prep_pread(&m_request, m_fd, buffer, size, static_cast<long long>(offset));
+        m_offset = offset;
+        m_size   = size;
+        m_buffer = buffer;
 
-        auto ptr_iocb      = &m_request;
-        auto num_submitted = io_submit(m_context, 1, &ptr_iocb);
-
-        auto ec = (num_submitted == 1) ? std::error_code() : std::make_error_code(std::errc::io_error);
+        readahead(m_fd, offset, size);
 
         auto t2 = std::chrono::steady_clock::now();
 
         m_submit_time += t2 - t1;
 
-        return ec;
+        return {};
     }
 
     ReadResult WaitForResult() override
     {
         auto t1 = std::chrono::steady_clock::now();
 
-        auto event      = io_event{};
-        auto num_events = io_getevents(m_context, 1, 1, &event, nullptr);
-        auto ec         = (num_events == 1) ? std::error_code() : std::make_error_code(std::errc::io_error);
+        auto result = pread64(m_fd, m_buffer, m_size, m_offset);
+        auto error  = result >= 0 ? std::error_code() : std::error_code(errno, std::system_category());
 
         auto t2 = std::chrono::steady_clock::now();
 
         m_wait_time += t2 - t1;
 
-        return ReadResult{ event.res, ec };
+        return error ? ReadResult{ 0, error } : ReadResult{ static_cast<size_t>(result), error };
     }
 
   private:
-    int          m_fd = -1;
-    io_context_t m_context{};
-    iocb         m_request{};
+    int    m_fd = -1;
+    size_t m_offset{};
+    size_t m_size{};
+    char*  m_buffer{};
 };
 
 #elif _WIN32
@@ -4220,7 +4210,7 @@ struct FileReader : Reader {
         auto t1 = std::chrono::steady_clock::now();
 
         auto n_bytes_read = pread(m_fd, m_buffer, m_size, m_offset);
-        auto error        = std::error_code();
+        auto error = std::error_code();
 
         if (n_bytes_read == -1) {
             n_bytes_read = 0;

@@ -12,8 +12,7 @@ target_include_directories(rapidobj INTERFACE
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     find_package(Threads REQUIRED)
-    find_package(Aio REQUIRED)
-    target_link_libraries(rapidobj INTERFACE Threads::Threads aio)
+    target_link_libraries(rapidobj INTERFACE Threads::Threads)
     target_link_libraries(rapidobj INTERFACE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
 endif()
 
@@ -34,8 +33,6 @@ install(EXPORT RapidObj DESTINATION ${DESTINATION_CMAKE_DIR} NAMESPACE rapidobj:
 install(FILES ${PROJECT_SOURCE_DIR}/cmake/RapidObjConfig.cmake DESTINATION ${DESTINATION_CMAKE_DIR})
 install(FILES ${PROJECT_BINARY_DIR}/include/RapidObjConfigVersion.cmake DESTINATION ${DESTINATION_CMAKE_DIR})
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
-    install(FILES ${PROJECT_SOURCE_DIR}/cmake/FindAio.cmake DESTINATION ${DESTINATION_CMAKE_DIR})
-
     # pkg-config file
     configure_file(${PROJECT_NAME}.pc.in
         ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc

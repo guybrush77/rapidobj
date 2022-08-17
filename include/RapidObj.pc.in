@@ -5,5 +5,5 @@ Name: @PROJECT_NAME@
 Version: @PROJECT_VERSION@
 
 Requires:
-Libs: -pthread -aio
+Libs: -pthread
 Cflags: -I${includedir}
