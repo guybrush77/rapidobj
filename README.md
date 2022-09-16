@@ -13,6 +13,7 @@
 - [API](#api)
   - [ParseFile](#parsefile)
   - [MaterialLibrary](#materiallibrary)
+- [Example](#example)
 - [RapidObj Result](#rapidobj-result)
 - [Next Steps](#next-steps)
 - [OS Support](#os-support)
@@ -155,7 +156,9 @@ Loads an .obj file, parses it and returns a result object.
 
 **Signature:**
 ```c++
-`Result ParseFile(const std::filesystem::path& obj_filepath, const MaterialLibrary& mtl_library = MaterialLibrary::Default())`
+Result ParseFile(
+    const std::filesystem::path& obj_filepath,
+    const MaterialLibrary&       mtl_library = MaterialLibrary::Default())
 ```
 
 **Parameters:**
@@ -181,37 +184,47 @@ struct MaterialLibrary
 };
 ```
 
-`Default`
+**`Default`**
 
-A convenience constructor identical to `MaterialLibrary::SearchPath(".", policy)`.
+A convenience constructor identical to `MaterialLibrary::SearchPath(".")`.
 
-`SearchPath`
+<details>
+<summary><i>Show examples</i></summary>
 
-Specifies .mtl file's relative or absolute search path and file loading policy (search path is relative to .obj file's parent folder).
-
-`SearchPaths`
-
-Specifies .mtl file's relative or absolute search paths and file loading policy (search paths are relative to .obj file's parent folder). The paths are examined in order; the first .mtl file found will be the one to be loaded and parsed.
-
-`String`
-
-Provides .mtl material description as a string.
-
-`Ignore`
-
-Instruct ParseFile to ignore material library, regardless of whether it is present or not. Materials array will be empty. Mesh material_ids arrays will be empty.
-
-**Examples:**
 ```c++
+// Default search assumes .obj and .mtl file are in the same folder.
+//  
 // home
 // └── user
 //     └── teapot
 //         ├── teapot.mtl
 //         └── teapot.obj
-Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::SearchPath("."));
+Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::Default());
 ```
 
 ```c++
+// MaterialLibrary::Default can be omitted since it is the default argument of ParseFile.
+//
+// home
+// └── user
+//     └── teapot
+//         ├── teapot.mtl
+//         └── teapot.obj
+Result result = ParseFile("/home/user/teapot/teapot.obj");
+```
+
+</details>
+
+**`SearchPath`**
+
+Constructor used to specify .mtl file's relative or absolute search path and file loading policy (search path is relative to .obj file's parent folder).
+
+<details>
+<summary><i>Show examples</i></summary>
+
+```c++
+// Look for .mtl file in subfolder 'materials'.
+//
 // home
 // └── user
 //     └── teapot
@@ -222,16 +235,84 @@ Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::Searc
 ```
 
 ```c++
+// Look for .mtl file in an arbitrary file folder.
+//
 // home
 // └── user
 //     ├── materials
 //     │   └── teapot.mtl
 //     └── teapot
 //         └── teapot.obj
-Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::SearchPath("../materials"));
+Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::SearchPath("/home/user/materials"));
 ```
+</details>
 
-Each polygon in a mesh may have 3 sides (triangle), 4 sides (quadrilateral), 5 sides (pentagon) - all the way up to the 255 sides maximum. Function ```Triangulate()``` takes a result object, loops through all the meshes, and decomposes polygons with more than three sides into a set of triangles. However, if the meshes are already triangulated, then the function call will do nothing.
+**`SearchPaths`**
+
+Constructor used to specify .mtl file's relative or absolute search paths and file loading policy (search paths are relative to .obj file's parent folder). The paths are examined in order; the first .mtl file found will be the one to be loaded and parsed.
+
+<details>
+<summary><i>Show examples</i></summary>
+
+```c++
+// Look for .mtl file in folder /home/user/teapot/materials, then /home/user/materials, then /home/user/teapot.
+//
+// home
+// └── user
+//     ├── materials
+//     │   └── teapot.mtl
+//     └── teapot
+//         ├── materials
+//         │   └── teapot.mtl
+//         ├── teapot.mtl
+//         └── teapot.obj
+MaterialLibrary mtllib = MaterialLibrary::SearchPaths({ "materials", "../materials", "." });
+Result          result = ParseFile("/home/user/teapot/teapot.obj", mtllib);
+```
+</details>
+
+**`String`**
+
+Constructor used to provide .mtl material description as a string.
+
+<details>
+<summary><i>Show examples</i></summary>
+
+```c++
+// Define a material library as a string, then pass it to ParseFile function.
+//
+// home
+// └── user
+//     └── teapot
+//         └── teapot.obj
+static constexpr auto materials = R"(
+    newmtl red
+    Kd 1 0 0
+)";
+Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::String(materials));
+```
+</details>
+
+**`Ignore`**
+
+Constructor used to instruct ParseFile to ignore material library, regardless of whether it is present or not. Materials array will be empty. Mesh material_ids arrays will be empty.
+
+<details>
+<summary><i>Show examples</i></summary>
+  
+```c++
+// Instruct ParseFile to ignore teapot.mtl file.
+//
+// home
+// └── user
+//     └── teapot
+//         ├── teapot.mtl
+//         └── teapot.obj
+Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::Ignore());
+```
+</details>
+
+## Example
 
 Suppose we want to find out the total number of triangles in an .obj file. This can be accomplished by passing the .obj file path to```ParseFile()``` and triangulating the result. The next step is looping through all the meshes; in each iteration, the number of triangles in the current mesh is added to the running sum. The code for this logic is shown below:
 
