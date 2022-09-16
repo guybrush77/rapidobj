@@ -11,6 +11,7 @@
   - [Manual Integration](#manual-integration)
   - [CMake Integration](#cmake-integration)
 - [API](#api)
+  - [ParseFile](#parse-file)
 - [RapidObj Result](#rapidobj-result)
 - [Next Steps](#next-steps)
 - [OS Support](#os-support)
@@ -146,6 +147,27 @@ target_link_libraries(my_app PRIVATE rapidobj::rapidobj)
 ```
 
 ## API
+
+<a name="parse-file"></a>
+
+```c++
+Result ParseFile(const std::filesystem::path& obj_filepath, const MaterialLibrary& mtl_library = MaterialLibrary::Default())
+```
+
+Loads an .obj file, parses it and returns a result object.
+
+**Parameters:**
+* `obj_filepath` - Path to .obj file to be parsed.
+* `mtl_library` - MaterialLibrary object specifies .mtl file search path(s) and loading policy.
+
+**Result:**
+* `Result` - The .obj file data in a binary format.
+
+**Example:**
+
+```c++
+Result result = rapidobj::ParseFile("/path/to/my.obj");
+```
 
 The API of the RapidObj library is rather simple. It consists of two free-standing functions: ```ParseFile()``` and ```Triangulate()```.
 
