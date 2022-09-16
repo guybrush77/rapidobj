@@ -18,6 +18,8 @@
 - [Data Layout](#data-layout)
   - [Result](#result)
   - [Attributes](#attributes)
+  - [Shape](#shape)
+  - [Mesh](#mesh)
 - [Example](#example)
 - [Next Steps](#next-steps)
 - [OS Support](#os-support)
@@ -470,6 +472,85 @@ Attributes class contains four linear arrays which store vertex positions, textu
         <td>r</td><td>g</td><td>b</td>
         <td>r</td><td>g</td><td>b</td>
         <td>r</td><td>g</td><td>b</td>
+    </tr>
+</table>
+
+### Shape
+
+Shape is a polyhedral mesh (`Mesh`), a set of polylines (`Lines`) or a set of points (`Points`).
+
+### Mesh
+
+Mesh class defines the shape of a polyhedral object. The geometry information is stored in two arrays: indices and num_face_vertices. Per face material information is stored in the material_ids array. Smoothing groups, used for normal interpolation, are stored in the smoothing_group_ids array.
+
+**`Mesh::indices`**
+
+The indices array is a collection of faces formed by indexing into vertex attribute arrays. It is a linear array of Index objects. Index class has three fields: position_index, texcoord_index, and normal_index. Only the position_index is mandatory; a vertex normal and UV coordinates are optional. For optional attributes, invalid index (-1) is stored in the normal_index and texcoord_index fields.
+
+<table>
+    <tr>
+        <th colspan=3>f<sub>0</sub></th>
+        <th colspan=5>f<sub>1</sub></th>
+        <th colspan=4>f<sub>2</sub></th>
+        <th rowspan=2>...</th>
+        <th colspan=3>f<sub>N-1</sub></th>
+    </tr>
+    <tr>
+        <td>i<sub>0</sub></td><td>i<sub>1</sub></td><td>i<sub>2</sub></td>
+        <td>i<sub>3</sub></td><td>i<sub>4</sub></td><td>i<sub>5</sub></td><td>i<sub>6</sub></td><td>i<sub>7</sub></td>
+        <td>i<sub>8</sub></td><td>i<sub>9</sub></td><td>i<sub>10</sub></td><td>i<sub>11</sub></td>
+        <td>i<sub>N-3</sub></td><td>i<sub>N-2</sub></td><td>i<sub>N-1</sub></td>
+    </tr>
+</table>
+
+**`Mesh::num_face_vertices`**
+
+A mesh face can have three (triangle), four (quad) or more vertices. Because the indices array is flat, extra information is required to identify which indices are associated with a particular face. The number of vertices for each face is stored in the num_face_vertices array. The size of the num_face_vertices array is equal to the number of faces in the mesh.
+
+<table>
+    <tr>
+        <th>f<sub>0</sub></th>
+        <th>f<sub>1</sub></th>
+        <th>f<sub>2</sub></th>
+        <th rowspan=2>...</th>
+        <th>f<sub>N-1</sub></th>
+    </tr>
+    <tr>
+        <td>3</td><td>5</td><td>4</td><td>3</td>
+    </tr>
+</table>
+
+**`Mesh::material_ids`**
+
+Material IDs index into the the Materials array.
+
+<table>
+    <tr>
+        <th>f<sub>0</sub></th>
+        <th>f<sub>1</sub></th>
+        <th>f<sub>2</sub></th>
+        <th rowspan=2>...</th>
+        <th>f<sub>N-1</sub></th>
+    </tr>
+    <tr>
+        <td>m<sub>0</sub></td><td>m<sub>1</sub></td><td>m<sub>2</sub></td><td>m<sub>N-1</sub></td>
+    </tr>
+</table>
+
+**`Mesh::smoothing_group_ids`**
+
+ Smoothing group IDs can be used to calculate vertex normals.
+
+<table>
+    <tr>
+        <th>f<sub>0</sub></th>
+        <th>f<sub>1</sub></th>
+        <th>f<sub>2</sub></th>
+        <th rowspan=2>...</th>
+        <th>f<sub>N-1</sub></th>
+    </tr>
+    <tr>
+        <td>s<sub>0</sub></td><td>s<sub>1</sub></td><td>s<sub>2</sub></td><td>s<sub>N-1</sub></td>
     </tr>
 </table>
 
