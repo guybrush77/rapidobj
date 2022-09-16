@@ -13,6 +13,7 @@
 - [API](#api)
   - [ParseFile](#parsefile)
   - [MaterialLibrary](#materiallibrary)
+  - [Load Policy](#load-policy)
   - [Triangulate](#triangulate)
 - [Example](#example)
 - [RapidObj Result](#rapidobj-result)
@@ -25,7 +26,7 @@
 
 RapidObj is an easy-to-use, single-header C++17 library that loads and parses [Wavefront .obj files](https://en.wikipedia.org/wiki/Wavefront_.obj_file).
 
-The .obj file format was first used by Wavefront Technologies around 1990. However, this 3D geometry file format did not age well. An .obj file is a text file and, consequently, large models take a lot of of disk space and are slow to load and parse. Moreover, after loading and parsing, additional processing steps are required to transform the data into a format suitable for hardware (i.e. GPU) rendering. Nevertheless, .obj files are common enough in the wild that it's useful to have an efficient way to parse them.
+The .obj file format was first used by Wavefront Technologies around 1990. However, this 3D geometry file format did not age well. An .obj file is a text file and, consequently, large models take a lot of of disk space and are slow to load and parse. Moreover, after loading and parsing, additional processing steps are required to transform the data into a format suitable for hardware (i.e. GPU) rendering. Nevertheless, .obj files are common enough that it's useful to have an efficient way to parse them.
 
 RapidObj's API was influenced by another single header C++ library, [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader). From users' point of view, the two libraries look fairly similar. That said, tinyobjloader has been around for some time; it is a mature and well tested library. So, why use RapidObj library? It is fast, and especially so when parsing large files. It was designed to take full advantage of modern computer hardware. See [Benchmarks](docs/BENCHMARKS.md) page.
 
@@ -169,6 +170,14 @@ Result ParseFile(
 **Result:**
 * `Result` - The .obj file data in a binary format.
 
+<details>
+<summary><i>Show examples</i></summary>
+  
+```c++
+Result result = ParseFile("/home/user/teapot/teapot.obj");
+```
+</details>
+
 ### MaterialLibrary
 
 An object of type MaterialLibrary is used as an argument for the ParseFile function. It tells the ParseFile function how materials are to be handled.
@@ -213,7 +222,6 @@ Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::Defau
 //         └── teapot.obj
 Result result = ParseFile("/home/user/teapot/teapot.obj");
 ```
-
 </details>
 
 **`SearchPath`**
@@ -313,9 +321,50 @@ Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::Ignor
 ```
 </details>
 
+### Load Policy
+
+Load is passed as an argument to MaterialLibrary::SearchPath(s) constructors to specify which actions to take if the material library file cannot be opened.
+
+Mandatory loading instructs the ParseFile function to immediately stop further execution and produce an error if the .mtl file cannot be opened.
+
+Optional loading instructs the ParseFile function to continue .obj loading and parsing, even if the .mtl file cannot be opened. However, Materials array will be empty. Mesh material_ids will contain ids assigned in order of appearance in the .obj file (0, 1, 2 etc.).
+
+**Signature:**
+```c++
+enum class Load { Mandatory, Optional };
+```
+
+<details>
+<summary><i>Show examples</i></summary>
+  
+```c++
+// Look for .mtl file in subfolder 'materials'.
+// If the file cannot be found, ParseFile function will fail with an error.
+//
+MaterialLibrary mtllib = MaterialLibrary::SearchPath("materials", Load::Mandatory);
+Result          result = ParseFile("/home/user/teapot/teapot.obj", mtllib);
+```
+
+```c++
+// Look for .mtl file in subfolder 'materials'.
+// If the file cannot be found, ParseFile function will continue .obj loading and parsing.
+//
+MaterialLibrary mtllib = MaterialLibrary::SearchPath("materials", Load::Optional);
+Result          result = ParseFile("/home/user/teapot/teapot.obj", mtllib);
+```
+
+```c++
+// Look for .mtl file in default location.
+// If the file cannot be found, ParseFile function will continue .obj loading and parsing.
+//
+MaterialLibrary mtllib = MaterialLibrary::Default(Load::Optional);
+Result          result = ParseFile("/home/user/teapot/teapot.obj", mtllib);
+```
+</details>
+
 ### Triangulate
 
-Triangulate all meshes in Result object.
+Triangulate all meshes in the Result object.
 
 **Signature:**
 ```c++
@@ -328,6 +377,15 @@ bool Triangulate(Result& result)
 **Result:**
 * `bool` - True if triangulation was successful; false otherwise.
 
+<details>
+<summary><i>Show examples</i></summary>
+  
+```c++
+Result result  = ParseFile("/home/user/teapot/teapot.obj");
+bool   success = Triangulate(result);
+```
+</details>
+
 ## Example
 
 Suppose we want to find out the total number of triangles in an .obj file. This can be accomplished by passing the .obj file path to```ParseFile()``` and triangulating the result. The next step is looping through all the meshes; in each iteration, the number of triangles in the current mesh is added to the running sum. The code for this logic is shown below:
@@ -339,7 +397,7 @@ Suppose we want to find out the total number of triangles in an .obj file. This 
 
 int main()
 {
-    auto result = rapidobj::ParseFile("/path/to/my.obj");
+    Result result = rapidobj::ParseFile("/path/to/my.obj");
 
     if (result.error) {
         std::cout << result.error.code.message() << '\n';
@@ -353,7 +411,7 @@ int main()
         return EXIT_FAILURE;
     }
 
-    auto num_triangles = size_t();
+    size_t num_triangles{};
 
     for (const auto& shape : result.shapes) {
         num_triangles += shape.mesh.num_face_vertices.size();
