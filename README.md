@@ -22,6 +22,7 @@
   - [Mesh](#mesh)
   - [Lines](#lines)
   - [Points](#points)
+  - [Materials](#materials)
 - [Example](#example)
 - [Next Steps](#next-steps)
 - [OS Support](#os-support)
@@ -618,6 +619,64 @@ The indices array defines points by indexing into vertex attribute arrays. It is
     </tr>
 </table>
 
+### Materials
+
+After ParseFunction loads and parses the .mtl file, all the material information is stored in the Result Materials array.
+
+**Material Parameters**
+
+| Parameter                   | Keyword  | Type          | Description                          |
+|-----------------------------|----------|---------------|--------------------------------------|
+| ambient                     | Ka       | color         | Ambient reflectance                  |
+| diffuse                     | Kd       | color         | Diffuse reflectance                  |
+| specular                    | Ks       | color         | Specular reflectance                 |
+| transmittance               | Kt       | color         | Transparency                         |
+| emission                    | Ke       | color         | Emissive coeficient                  |
+| shininess                   | Ns       | float         | Specular exponent                    |
+| ior                         | Ni       | float         | Index of refraction                  |
+| dissolve                    | d        | float         | Fake transparency                    |
+| illum                       | illum    | int           | Illumination model                   |
+| ambient_texname             | map_Ka   | path          | Path to ambient texture              |
+| diffuse_texname             | map_Kd   | path          | Path to diffuse texture              |
+| specular_texname            | map_Ks   | path          | Path to specular texture             |
+| specular_highlight_texname  | map_Ns   | path          | Path to specular highlight texture   |
+| bump_texname                | map_bump | path          | Path to bump map texture             |
+| displacement_texname        | disp     | path          | Path to displacement map texture     |
+| alpha_texname               | map_d    | path          | Path to alpha texture                |
+| reflection_texname          | refl     | path          | Path to reflection map texture       |
+| ambient_texopt              |          | TextureOption | Ambient texture options              |
+| diffuse_texopt              |          | TextureOption | Diffuse texture options              |
+| specular_texopt             |          | TextureOption | Specular texture options             |
+| specular_highlight_texopt   |          | TextureOption | Specular highlight texture options   |
+| bump_texopt                 |          | TextureOption | Bump map texture options             |
+| displacement_texopt         |          | TextureOption | Displacement map texture options     |
+| alpha_texopt                |          | TextureOption | Alpha texture options                |
+| reflection_texopt           |          | TextureOption | Reflection map texture options       |
+
+**Material Parameters (PBR Extension)**
+
+| Parameter                   | Keyword  | Type          | Description                          |
+|-----------------------------|----------|---------------|--------------------------------------|
+| roughness                   | Pr       | float         | Surface roughness                    |
+| metallic                    | Pm       | float         | Surface metalness                    |
+| sheen                       | Ps       | float         | Amount of soft reflection near edges |
+| clearcoat_thickness         | Pc       | float         | Extra white specular layer on top    |
+| clearcoat_roughness         | Pcr      | float         | Roughness of white specular layer    |
+| anisotropy                  | aniso    | float         | Anisotropy for specular reflection   |
+| anisotropy_rotation         | anisor   | float         | Anisotropy rotation amount           |
+| roughness_texname           | map_Pr   | path          | Path to roughness texture            |
+| metallic_texname            | map_Pm   | path          | Path to metalness texture            |
+| sheen_texname               | map_Ps   | path          | Path to sheen texture                |
+| emissive_texname            | map_Ke   | path          | Path to emissive texture             |
+| normal_texname              | norm     | path          | Path to normal texture               |
+| roughness_texopt            |          | TextureOption | Roughness texture options            |
+| metallic_texopt             |          | TextureOption | Metalness texture options            |
+| sheen_texopt                |          | TextureOption | Sheen texture options                |
+| emissive_texopt             |          | TextureOption | Emissive texture options             |
+| normal_texopt               |          | TextureOption | Normal texture options               |
+
+    
+    
 ## Example
 
 Suppose we want to find out the total number of triangles in an .obj file. This can be accomplished by passing the .obj file path to```ParseFile()``` and triangulating the result. The next step is looping through all the meshes; in each iteration, the number of triangles in the current mesh is added to the running sum. The code for this logic is shown below:
