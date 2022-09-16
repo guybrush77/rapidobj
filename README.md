@@ -11,7 +11,8 @@
   - [Manual Integration](#manual-integration)
   - [CMake Integration](#cmake-integration)
 - [API](#api)
-  - [ParseFile](#parse-file)
+  - [ParseFile](#parsefile)
+  - [MaterialLibrary](#materiallibrary)
 - [RapidObj Result](#rapidobj-result)
 - [Next Steps](#next-steps)
 - [OS Support](#os-support)
@@ -148,13 +149,14 @@ target_link_libraries(my_app PRIVATE rapidobj::rapidobj)
 
 ## API
 
-<a name="parse-file"></a>
-
-```c++
-Result ParseFile(const std::filesystem::path& obj_filepath, const MaterialLibrary& mtl_library = MaterialLibrary::Default())
-```
+### ParseFile
 
 Loads an .obj file, parses it and returns a result object.
+
+**Signature:**
+```c++
+`Result ParseFile(const std::filesystem::path& obj_filepath, const MaterialLibrary& mtl_library = MaterialLibrary::Default())`
+```
 
 **Parameters:**
 * `obj_filepath` - Path to .obj file to be parsed.
@@ -163,15 +165,71 @@ Loads an .obj file, parses it and returns a result object.
 **Result:**
 * `Result` - The .obj file data in a binary format.
 
-**Example:**
+### MaterialLibrary
 
+An object of type MaterialLibrary is used as an argument for the ParseFile function. It tells the ParseFile function how materials are to be handled.
+
+**Signature:**
 ```c++
-Result result = rapidobj::ParseFile("/path/to/my.obj");
+struct MaterialLibrary
+{
+    static MaterialLibrary Default(Load policy = Load::Mandatory);
+    static MaterialLibrary SearchPath(std::filesystem::path path, Load policy = Load::Mandatory);
+    static MaterialLibrary SearchPaths(std::vector<std::filesystem::path> paths, Load policy = Load::Mandatory);
+    static MaterialLibrary String(std::string_view text);
+    static MaterialLibrary Ignore();
+};
 ```
 
-The API of the RapidObj library is rather simple. It consists of two free-standing functions: ```ParseFile()``` and ```Triangulate()```.
+`Default`
 
-Function ```ParseFile()``` loads an .obj file, parses it and returns a result object. The result object contains vertex attribute arrays, shapes and materials. A shape object contains a collection of polygons (i.e. a mesh) or a collection of polylines.
+A convenience constructor identical to `MaterialLibrary::SearchPath(".", policy)`.
+
+`SearchPath`
+
+Specifies .mtl file's relative or absolute search path and file loading policy (search path is relative to .obj file's parent folder).
+
+`SearchPaths`
+
+Specifies .mtl file's relative or absolute search paths and file loading policy (search paths are relative to .obj file's parent folder). The paths are examined in order; the first .mtl file found will be the one to be loaded and parsed.
+
+`String`
+
+Provides .mtl material description as a string.
+
+`Ignore`
+
+Instruct ParseFile to ignore material library, regardless of whether it is present or not. Materials array will be empty. Mesh material_ids arrays will be empty.
+
+**Examples:**
+```c++
+// home
+// └── user
+//     └── teapot
+//         ├── teapot.mtl
+//         └── teapot.obj
+Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::SearchPath("."));
+```
+
+```c++
+// home
+// └── user
+//     └── teapot
+//         ├── materials
+//         │   └── teapot.mtl
+//         └── teapot.obj
+Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::SearchPath("materials"));
+```
+
+```c++
+// home
+// └── user
+//     ├── materials
+//     │   └── teapot.mtl
+//     └── teapot
+//         └── teapot.obj
+Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::SearchPath("../materials"));
+```
 
 Each polygon in a mesh may have 3 sides (triangle), 4 sides (quadrilateral), 5 sides (pentagon) - all the way up to the 255 sides maximum. Function ```Triangulate()``` takes a result object, loops through all the meshes, and decomposes polygons with more than three sides into a set of triangles. However, if the meshes are already triangulated, then the function call will do nothing.
 
