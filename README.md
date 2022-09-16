@@ -394,7 +394,7 @@ bool   success = Triangulate(result);
 
 Result object is the return value of the ParseFile function. It contains the .obj and .mtl file data in binary format.
 
-![rapidobj::Result](data/images/result.svg)
+![rapidobj::Result](data/images/docs/result-light.svg)
 
 ### Attributes
 

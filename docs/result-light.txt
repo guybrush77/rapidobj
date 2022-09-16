@@ -1,0 +1,91 @@
+@startuml
+
+hide circle
+
+skinparam tabSize 1
+
+skinparam ArrowColor     DarkSlateGrey
+skinparam ArrowFontName  DejaVu Serif
+skinparam ArrowFontSize  11
+skinparam ArrowFontStyle Bold
+skinparam ArrowThickness 2
+
+skinparam ClassFontName  DejaVu Sans Mono
+skinparam ClassFontStyle Bold
+skinparam ClassFontSize  14
+skinparam ClassFontColor Black
+
+skinparam ClassAttributeFontName  DejaVu Sans Mono
+skinparam ClassAttributeFontStyle Bold
+skinparam ClassAttributeFontColor Black
+
+skinparam ClassBackgroundColor SeaShell
+
+skinparam ClassBorderColor Navy
+
+class Result {
+    attributes\t: Attributes
+    shapes\t\t\t\t\t: std::vector<Shape>
+    materials\t\t: std::vector<Material>
+    error\t\t\t\t\t\t: Error
+}
+
+class Attributes {
+    positions\t: Array<float>
+    texcoords\t: Array<float>
+    normals\t\t\t: Array<float>
+    colors\t\t\t\t: Array<float>
+}
+
+class Shape {
+    name\t\t\t: std::string
+    mesh\t\t\t: Mesh
+    lines\t\t: Lines
+    points\t: Points
+}
+
+class Mesh {
+    indices\t\t\t\t\t\t\t\t\t\t\t\t\t: Array<Index>
+    num_face_vertices\t\t\t: Array<std::uint8_t>
+    material_ids\t\t\t\t\t\t\t\t: Array<std::int32_t>  
+    smoothing_group_ids\t: Array<std::uint32_t>
+}
+
+class Lines {
+    indices\t\t\t\t\t\t\t\t\t\t\t: Array<Index>
+    num_line_vertices\t: Array<std::int32_t>
+}
+
+class Points {
+    indices\t: Array<Index>
+}
+
+class Material {
+    name\t\t\t\t\t\t\t: std::string
+    parameters\t: ParameterTypes
+}
+
+class Error {
+    code\t\t\t\t\t: std::error_code
+    line\t\t\t\t\t: std::string     
+    line_num\t: std::size_t
+}
+
+class Index {
+    position_index\t: int
+    texcoord_index\t: int
+    normal_index\t\t\t: int
+}
+
+Result *-- "1" Attributes #text:DarkRed
+Result *-- "1..*" Shape #text:DarkRed
+Result *-- "0..*  " Material #text:DarkRed
+Result *-- "1       " Error #text:DarkRed
+
+Shape *-- "0..1" Mesh #text:DarkRed
+Shape *-- "0..1" Lines #text:DarkRed
+Shape *-- "0..1     " Points #text:DarkRed
+
+hide methods
+@enduml
+
