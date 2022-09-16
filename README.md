@@ -21,6 +21,7 @@
   - [Shape](#shape)
   - [Mesh](#mesh)
   - [Lines](#lines)
+  - [Points](#points)
 - [Example](#example)
 - [Next Steps](#next-steps)
 - [OS Support](#os-support)
@@ -593,6 +594,27 @@ A polyline can have two or more vertices. Because the indices array is flat, ext
     </tr>
     <tr>
         <td>6</td><td>2</td><td>4</td><td>5</td>
+    </tr>
+</table>
+
+### Points
+
+Points class contains a set of points. The geometry data is stored in the indices array.
+
+**`Points::indices`**
+
+The indices array defines points by indexing into vertex attribute arrays. It is a linear array of Index objects. Index class has three fields: position_index, texcoord_index, and normal_index. The position_index is mandatory. UV coordinates are optional. If UV coordinates are not present, invalid index (-1) is stored in the texcoord_index fields. The normal_index is always set to invalid index.
+
+<table>
+    <tr>
+        <th>p<sub>0</sub></th>
+        <th>p<sub>1</sub></th>
+        <th>p<sub>2</sub></th>
+        <th rowspan=2>...</th>
+        <th>p<sub>N-1</sub></th>
+    </tr>
+    <tr>
+        <td>i<sub>0</sub></td><td>i<sub>1</sub></td><td>i<sub>2</sub></td><td>i<sub>N-1</sub></td>
     </tr>
 </table>
 
