@@ -13,6 +13,7 @@
 - [API](#api)
   - [ParseFile](#parsefile)
   - [MaterialLibrary](#materiallibrary)
+  - [Triangulate](#triangulate)
 - [Example](#example)
 - [RapidObj Result](#rapidobj-result)
 - [Next Steps](#next-steps)
@@ -311,6 +312,21 @@ Constructor used to instruct ParseFile to ignore material library, regardless of
 Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::Ignore());
 ```
 </details>
+
+### Triangulate
+
+Triangulate all meshes in Result object.
+
+**Signature:**
+```c++
+bool Triangulate(Result& result)
+```
+
+**Parameters:**
+* `result` - Result object obtained from calling ParseFile function.
+
+**Result:**
+* `bool` - True if triangulation was successful; false otherwise.
 
 ## Example
 
