@@ -675,8 +675,24 @@ After ParseFunction loads and parses the .mtl file, all the material information
 | emissive_texopt             |          | TextureOption | Emissive texture options             |
 | normal_texopt               |          | TextureOption | Normal texture options               |
 
-    
-    
+**TextureOption**
+
+| Parameter                   | Keyword  | Type          | Description                          |
+|-----------------------------|----------|---------------|--------------------------------------|
+| type                        | type     | TextureType   | Mapping type (None, Sphere, Cube)    |
+| sharpness                   | boost    | float         | Boosts mip-map sharpness             |
+| brightness                  | mm       | float         | Controls texture brightness          |
+| contrast                    | mm       | float         | Controls texture contrast            |
+| origin_offset               | o        | float3        | Moves texture origin                 |
+| scale                       | s        | float3        | Adjusts texture scale                |
+| turbulence                  | t        | float3        | Controls texture turbulence          |
+| texture_resolution          | texres   | int           | Texture resolution to create         |
+| clamp                       | clamp    | bool          | Only render texels in clamped range  |
+| imfchan                     | imfchan  | char          | Specifies channels of the file to use|
+| blendu                      | blendu   | bool          | Set horizontal texture blending      |
+| blendv                      | blendv   | bool          | Set vertical texture blending        |
+| bump_multiplier             | bm       | float         | Bump map multiplier                  |
+
 ## Example
 
 Suppose we want to find out the total number of triangles in an .obj file. This can be accomplished by passing the .obj file path to```ParseFile()``` and triangulating the result. The next step is looping through all the meshes; in each iteration, the number of triangles in the current mesh is added to the running sum. The code for this logic is shown below:
