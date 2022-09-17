@@ -2,6 +2,8 @@
 
 hide circle
 
+skinparam dpi 200
+
 skinparam tabSize 1
 
 skinparam ArrowColor     DarkSlateGrey
