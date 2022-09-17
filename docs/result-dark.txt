@@ -12,6 +12,8 @@ skinparam ArrowFontSize  11
 skinparam ArrowFontStyle Bold
 skinparam ArrowThickness 2
 
+skinparam BackgroundColor Transparent
+
 skinparam ClassFontName  DejaVu Sans Mono
 skinparam ClassFontStyle Bold
 skinparam ClassFontSize  14
