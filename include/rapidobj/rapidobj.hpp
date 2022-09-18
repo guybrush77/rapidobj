@@ -4333,7 +4333,9 @@ struct Buffer final {
             auto cap = std::max(kInitialSize, 2 * (m_size + size));
             auto src = std::unique_ptr<T[]>(std::move(m_data));
             m_data.reset(new T[cap]);
-            memcpy(m_data.get(), src.get(), m_size * sizeof(T));
+            if (src) {
+                memcpy(m_data.get(), src.get(), m_size * sizeof(T));
+            }
             m_room = cap - m_size;
         }
     }
