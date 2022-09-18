@@ -5080,10 +5080,10 @@ class File final {
             m_error = std::error_code(errno, std::system_category());
         }
     }
-    File(const File&) = delete;
+    File(const File&)            = delete;
     File& operator=(const File&) = delete;
-    File(File&&) = delete;
-    File& operator=(File&&) = delete;
+    File(File&&)                 = delete;
+    File& operator=(File&&)      = delete;
     ~File() noexcept
     {
         if (m_fd != -1) {
@@ -5092,13 +5092,13 @@ class File final {
     }
 
     explicit operator bool() const noexcept { return m_fd != -1; }
-    auto handle() const noexcept { return m_fd; }
-    auto size() const noexcept { return static_cast<size_t>(m_info.st_size); }
-    auto error() const noexcept { return m_error; }
+    auto     handle() const noexcept { return m_fd; }
+    auto     size() const noexcept { return static_cast<size_t>(m_info.st_size); }
+    auto     error() const noexcept { return m_error; }
 
   private:
-    int m_fd = -1;
-    struct stat m_info {};
+    int             m_fd = -1;
+    struct stat     m_info {};
     std::error_code m_error{};
 };
 
@@ -5122,12 +5122,12 @@ struct FileReader : Reader {
         auto error = std::error_code();
 
         m_offset = offset;
-        m_size = size;
+        m_size   = size;
         m_buffer = buffer;
 
         radvisory args{};
         args.ra_offset = static_cast<off_t>(offset);
-        args.ra_count = static_cast<int>(size);
+        args.ra_count  = static_cast<int>(size);
 
         auto result = fcntl(m_fd, F_RDADVISE, &args);
 
@@ -5147,11 +5147,11 @@ struct FileReader : Reader {
         auto t1 = std::chrono::steady_clock::now();
 
         auto n_bytes_read = pread(m_fd, m_buffer, m_size, m_offset);
-        auto error = std::error_code();
+        auto error        = std::error_code();
 
         if (n_bytes_read == -1) {
             n_bytes_read = 0;
-            error = std::error_code(errno, std::system_category());
+            error        = std::error_code(errno, std::system_category());
         }
 
         auto t2 = std::chrono::steady_clock::now();
@@ -5162,10 +5162,10 @@ struct FileReader : Reader {
     }
 
   private:
-    int m_fd = -1;
-    off_t m_offset{};
+    int    m_fd = -1;
+    off_t  m_offset{};
     size_t m_size{};
-    char* m_buffer{};
+    char*  m_buffer{};
 };
 
 #endif
@@ -6056,7 +6056,7 @@ inline auto ParseMaterialLibrary(SharedContext* context)
     return ParseMaterials(std::string_view(filedata.data(), static_cast<size_t>(filesize)));
 }
 
-inline void DispatchMergeTasks(const std::vector<MergeTask>& tasks, SharedContext* context)
+inline void DispatchMergeTasks(const std::vector<MergeTask>& tasks, std::shared_ptr<SharedContext> context)
 {
     while (true) {
         auto fetched_index = std::atomic_fetch_add(&context->merging.task_index, size_t(1));
@@ -6081,12 +6081,12 @@ inline void DispatchMergeTasks(const std::vector<MergeTask>& tasks, SharedContex
     }
 }
 
-inline void MergeSequential(MergeTasks* tasks, SharedContext* context)
+inline void MergeSequential(MergeTasks* tasks, std::shared_ptr<SharedContext> context)
 {
     DispatchMergeTasks(std::vector<MergeTask>(tasks->begin(), tasks->end()), context);
 }
 
-inline void MergeParallel(MergeTasks* merge_tasks, SharedContext* context)
+inline void MergeParallel(MergeTasks* merge_tasks, std::shared_ptr<SharedContext> context)
 {
     auto tasks = MergeTasks();
     tasks.reserve(merge_tasks->size());
@@ -6169,7 +6169,7 @@ struct Offset final {
     }
 };
 
-inline Result Merge(const std::vector<Chunk>& chunks, SharedContext* context)
+inline Result Merge(const std::vector<Chunk>& chunks, std::shared_ptr<SharedContext> context)
 {
     // compute overall sizes of lists
     auto list_info = ListInfo{};
@@ -6775,7 +6775,6 @@ inline void ProcessBlocksImpl(
     Reader*        reader,
     size_t         block_begin,
     size_t         block_end,
-    size_t         bytes_per_block,
     bool           stop_parsing_after_eol,
     Chunk*         chunk,
     SharedContext* context)
@@ -6784,19 +6783,19 @@ inline void ProcessBlocksImpl(
 
     bool begin_parsing_after_eol = block_begin > 0;
 
-    auto buffer_size = kMaxLineLength + bytes_per_block;
+    auto buffer_size = kMaxLineLength + kBlockSize;
     auto buffer1     = std::unique_ptr<char, sys::AlignedDeleter>(sys::AlignedAllocate(buffer_size, 4_KiB));
     auto buffer2     = std::unique_ptr<char, sys::AlignedDeleter>(sys::AlignedAllocate(buffer_size, 4_KiB));
 
     auto front_buffer = buffer1.get();
     auto back_buffer  = buffer2.get();
 
-    auto file_offset = block_begin * bytes_per_block;
+    auto file_offset = block_begin * kBlockSize;
 
     auto line = std::string_view();
     auto text = std::string_view();
 
-    if (auto ec = reader->ReadBlock(file_offset, bytes_per_block, front_buffer + kMaxLineLength)) {
+    if (auto ec = reader->ReadBlock(file_offset, kBlockSize, front_buffer + kMaxLineLength)) {
         chunk->error = Error{ ec };
         return;
     }
@@ -6826,9 +6825,9 @@ inline void ProcessBlocksImpl(
         bool last_block = i + 1 == block_end;
 
         if (!last_block) {
-            file_offset = (i + 1) * bytes_per_block;
+            file_offset = (i + 1) * kBlockSize;
 
-            if (auto ec = reader->ReadBlock(file_offset, bytes_per_block, back_buffer + kMaxLineLength)) {
+            if (auto ec = reader->ReadBlock(file_offset, kBlockSize, back_buffer + kMaxLineLength)) {
                 chunk->error = Error{ ec };
                 return;
             }
@@ -6908,20 +6907,18 @@ inline void ProcessBlocksImpl(
 }
 
 inline void ProcessBlocks(
-    sys::File*     file,
-    size_t         thread_index,
-    size_t         block_begin,
-    size_t         block_end,
-    size_t         bytes_per_block,
-    bool           stop_parsing_after_eol,
-    Chunk*         chunk,
-    SharedContext* context)
+    sys::File*                     file,
+    size_t                         thread_index,
+    size_t                         block_begin,
+    size_t                         block_end,
+    bool                           stop_parsing_after_eol,
+    Chunk*                         chunk,
+    std::shared_ptr<SharedContext> context)
 {
     assert(file);
     assert(chunk);
     assert(context);
     assert(block_begin < block_end);
-    assert(bytes_per_block > 0);
 
     auto t1 = std::chrono::steady_clock::now();
 
@@ -6930,7 +6927,7 @@ inline void ProcessBlocks(
     if (reader.Error()) {
         chunk->error = Error{ reader.Error() };
     } else {
-        ProcessBlocksImpl(&reader, block_begin, block_end, bytes_per_block, stop_parsing_after_eol, chunk, context);
+        ProcessBlocksImpl(&reader, block_begin, block_end, stop_parsing_after_eol, chunk, context.get());
     }
 
     if (1 == std::atomic_fetch_sub(&context->parsing.thread_count, size_t(1))) {
@@ -6947,7 +6944,7 @@ inline void ProcessBlocks(
     context->debug.parse.time[thread_index]     = parse_time;
 }
 
-inline void ParseFileSequential(sys::File* file, std::vector<Chunk>* chunks, SharedContext* context)
+inline void ParseFileSequential(sys::File* file, std::vector<Chunk>* chunks, std::shared_ptr<SharedContext> context)
 {
     context->thread.concurrency   = 1;
     context->parsing.thread_count = 1;
@@ -6963,10 +6960,10 @@ inline void ParseFileSequential(sys::File* file, std::vector<Chunk>* chunks, Sha
     auto stop_parsing_after_eol = false;
     auto chunk                  = &chunks->front();
 
-    ProcessBlocks(file, 0, 0, num_blocks, kBlockSize, stop_parsing_after_eol, chunk, context);
+    ProcessBlocks(file, 0, 0, num_blocks, stop_parsing_after_eol, chunk, context);
 }
 
-inline void ParseFileParallel(sys::File* file, std::vector<Chunk>* chunks, SharedContext* context)
+inline void ParseFileParallel(sys::File* file, std::vector<Chunk>* chunks, std::shared_ptr<SharedContext> context)
 {
     auto num_blocks            = file->size() / kBlockSize + (file->size() % kBlockSize != 0);
     auto num_threads           = std::thread::hardware_concurrency();
@@ -7014,7 +7011,7 @@ inline void ParseFileParallel(sys::File* file, std::vector<Chunk>* chunks, Share
         bool stop_parsing_after_eol = !is_last;
         auto chunk                  = &(*chunks)[i];
 
-        threads.emplace_back(ProcessBlocks, file, i, begin, end, kBlockSize, stop_parsing_after_eol, chunk, context);
+        threads.emplace_back(ProcessBlocks, file, i, begin, end, stop_parsing_after_eol, chunk, context);
         threads.back().detach();
     }
 
@@ -7035,12 +7032,12 @@ inline Result ParseFile(const std::filesystem::path& filepath, const MaterialLib
         return Result{ Attributes{}, Shapes{}, Materials{}, Error{ file.error() } };
     }
 
-    auto context = SharedContext{};
+    auto context = std::make_shared<SharedContext>();
 
-    context.material.library = std::holds_alternative<std::monostate>(mtllib.Value()) ? nullptr : &mtllib;
+    context->material.library = std::holds_alternative<std::monostate>(mtllib.Value()) ? nullptr : &mtllib;
 
     if (std::holds_alternative<std::vector<std::filesystem::path>>(mtllib.Value())) {
-        context.material.basepath = filepath.parent_path();
+        context->material.basepath = filepath.parent_path();
     }
 
     auto chunks = std::vector<Chunk>();
@@ -7048,14 +7045,14 @@ inline Result ParseFile(const std::filesystem::path& filepath, const MaterialLib
     auto t1 = std::chrono::steady_clock::now();
 
     if (file.size() <= kSingleThreadCutoff) {
-        ParseFileSequential(&file, &chunks, &context);
+        ParseFileSequential(&file, &chunks, context);
     } else {
-        ParseFileParallel(&file, &chunks, &context);
+        ParseFileParallel(&file, &chunks, context);
     }
 
     auto t2 = std::chrono::steady_clock::now();
 
-    context.debug.parse.total_time = t2 - t1;
+    context->debug.parse.total_time = t2 - t1;
 
     // check if an error occured
     size_t running_line_num = size_t{};
@@ -7069,13 +7066,13 @@ inline Result ParseFile(const std::filesystem::path& filepath, const MaterialLib
 
     t1 = std::chrono::steady_clock::now();
 
-    auto result = Merge(chunks, &context);
+    auto result = Merge(chunks, context);
 
     t2 = std::chrono::steady_clock::now();
 
-    context.debug.merge.total_time = t2 - t1;
+    context->debug.merge.total_time = t2 - t1;
 
-    //std::cout << DumpDebug(file, context);
+    // std::cout << DumpDebug(file, *context);
 
     auto memory = size_t{ 0 };
 
