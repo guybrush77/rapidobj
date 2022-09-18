@@ -7304,14 +7304,14 @@ TriangulateTasksParallel(size_t concurrency, const Array<float>& positions, cons
     auto task_index  = std::atomic_size_t{ 0 };
     auto num_threads = std::atomic_size_t{ concurrency };
     auto completed   = std::promise<void>();
-    bool success     = true;
+    auto success     = std::atomic_bool{ true };
 
     auto func = [&]() {
         auto fetched_index = std::atomic_fetch_add(&task_index, size_t(1));
 
         while (fetched_index < tasks.size()) {
-            success = TriangulateSingleTask(positions, tasks[fetched_index]);
-            if (!success) {
+            if (false == TriangulateSingleTask(positions, tasks[fetched_index])) {
+                success = false;
                 break;
             }
             fetched_index = std::atomic_fetch_add(&task_index, size_t(1));
