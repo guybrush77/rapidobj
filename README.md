@@ -1,4 +1,4 @@
-# ![rapidobj::Result](data/images/docs/logo.svg)
+# ![rapidobj](data/images/docs/logo-light.svg#gh-light-mode-only)![rapidobj](data/images/docs/logo-dark.svg#gh-dark-mode-only)
 
 [![Standard](https://img.shields.io/badge/standard-C%2B%2B17-blue)](https://en.wikipedia.org/wiki/C%2B%2B17)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -164,6 +164,7 @@ target_link_libraries(my_app PRIVATE rapidobj::rapidobj)
 Loads an .obj file, parses it and returns a result object.
 
 **Signature:**
+
 ```c++
 Result ParseFile(
     const std::filesystem::path& obj_filepath,
@@ -171,11 +172,13 @@ Result ParseFile(
 ```
 
 **Parameters:**
-* `obj_filepath` - Path to .obj file to be parsed.
-* `mtl_library` - MaterialLibrary object specifies .mtl file search path(s) and loading policy.
+
+- `obj_filepath` - Path to .obj file to be parsed.
+- `mtl_library` - MaterialLibrary object specifies .mtl file search path(s) and loading policy.
 
 **Result:**
-* `Result` - The .obj file data in a binary format.
+
+- `Result` - The .obj file data in a binary format.
 
 <details>
 <summary><i>Show examples</i></summary>
@@ -183,6 +186,7 @@ Result ParseFile(
 ```c++
 Result result = ParseFile("/home/user/teapot/teapot.obj");
 ```
+
 </details>
 
 ### MaterialLibrary
@@ -190,6 +194,7 @@ Result result = ParseFile("/home/user/teapot/teapot.obj");
 An object of type MaterialLibrary is used as an argument for the ParseFile function. It tells the ParseFile function how materials are to be handled.
 
 **Signature:**
+
 ```c++
 struct MaterialLibrary
 {
@@ -229,6 +234,7 @@ Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::Defau
 //         └── teapot.obj
 Result result = ParseFile("/home/user/teapot/teapot.obj");
 ```
+
 </details>
 
 **`SearchPath`**
@@ -261,6 +267,7 @@ Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::Searc
 //         └── teapot.obj
 Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::SearchPath("/home/user/materials"));
 ```
+
 </details>
 
 **`SearchPaths`**
@@ -285,6 +292,7 @@ Constructor used to specify .mtl file's relative or absolute search paths and fi
 MaterialLibrary mtllib = MaterialLibrary::SearchPaths({ "materials", "../materials", "." });
 Result          result = ParseFile("/home/user/teapot/teapot.obj", mtllib);
 ```
+
 </details>
 
 **`String`**
@@ -307,6 +315,7 @@ static constexpr auto materials = R"(
 )";
 Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::String(materials));
 ```
+
 </details>
 
 **`Ignore`**
@@ -326,6 +335,7 @@ Constructor used to instruct ParseFile to ignore material library, regardless of
 //         └── teapot.obj
 Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::Ignore());
 ```
+
 </details>
 
 ### Load Policy
@@ -337,6 +347,7 @@ Mandatory loading instructs the ParseFile function to immediately stop further e
 Optional loading instructs the ParseFile function to continue .obj loading and parsing, even if the .mtl file cannot be opened. However, Materials array will be empty. Mesh material_ids will contain ids assigned in order of appearance in the .obj file (0, 1, 2 etc.).
 
 **Signature:**
+
 ```c++
 enum class Load { Mandatory, Optional };
 ```
@@ -367,6 +378,7 @@ Result          result = ParseFile("/home/user/teapot/teapot.obj", mtllib);
 MaterialLibrary mtllib = MaterialLibrary::Default(Load::Optional);
 Result          result = ParseFile("/home/user/teapot/teapot.obj", mtllib);
 ```
+
 </details>
 
 ### Triangulate
@@ -374,15 +386,18 @@ Result          result = ParseFile("/home/user/teapot/teapot.obj", mtllib);
 Triangulate all meshes in the Result object.
 
 **Signature:**
+
 ```c++
 bool Triangulate(Result& result)
 ```
 
 **Parameters:**
-* `result` - Result object obtained from calling ParseFile function.
+
+- `result` - Result object obtained from calling ParseFile function.
 
 **Result:**
-* `bool` - True if triangulation was successful; false otherwise.
+
+- `bool` - True if triangulation was successful; false otherwise.
 
 <details>
 <summary><i>Show examples</i></summary>
@@ -391,6 +406,7 @@ bool Triangulate(Result& result)
 Result result  = ParseFile("/home/user/teapot/teapot.obj");
 bool   success = Triangulate(result);
 ```
+
 </details>
 
 ## Data Layout
@@ -623,7 +639,7 @@ The indices array defines points by indexing into vertex attribute arrays. It is
 
 After ParseFunction loads and parses the .mtl file, all the material information is stored in the Result Materials array.
 
-**Material Parameters**
+#### Material Parameters
 
 | Parameter                   | Keyword  | Type          | Description                          |
 |-----------------------------|----------|---------------|--------------------------------------|
@@ -653,7 +669,7 @@ After ParseFunction loads and parses the .mtl file, all the material information
 | alpha_texopt                |          | TextureOption | Alpha texture options                |
 | reflection_texopt           |          | TextureOption | Reflection map texture options       |
 
-**Material Parameters (PBR Extension)**
+#### Material Parameters (PBR Extension)
 
 | Parameter                   | Keyword  | Type          | Description                          |
 |-----------------------------|----------|---------------|--------------------------------------|
@@ -675,7 +691,7 @@ After ParseFunction loads and parses the .mtl file, all the material information
 | emissive_texopt             |          | TextureOption | Emissive texture options             |
 | normal_texopt               |          | TextureOption | Normal texture options               |
 
-**TextureOption**
+#### TextureOption
 
 | Parameter                   | Keyword  | Type          | Description                          |
 |-----------------------------|----------|---------------|--------------------------------------|
