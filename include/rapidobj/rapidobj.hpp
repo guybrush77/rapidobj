@@ -61,8 +61,8 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 
 #endif
 
-#define RAPIDOBJ_VERSION_MAJOR 0
-#define RAPIDOBJ_VERSION_MINOR 9
+#define RAPIDOBJ_VERSION_MAJOR 1
+#define RAPIDOBJ_VERSION_MINOR 0
 #define RAPIDOBJ_VERSION_PATCH 0
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
