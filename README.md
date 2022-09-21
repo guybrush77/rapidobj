@@ -720,7 +720,7 @@ Suppose we want to find out the total number of triangles in an .obj file. This 
 
 int main()
 {
-    Result result = rapidobj::ParseFile("/path/to/my.obj");
+    rapidobj::Result result = rapidobj::ParseFile("/path/to/my.obj");
 
     if (result.error) {
         std::cout << result.error.code.message() << '\n';
