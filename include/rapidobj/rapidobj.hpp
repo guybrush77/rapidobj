@@ -38,6 +38,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 #include <string>
 #include <system_error>
 #include <thread>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -63,7 +64,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 
 #define RAPIDOBJ_VERSION_MAJOR 1
 #define RAPIDOBJ_VERSION_MINOR 0
-#define RAPIDOBJ_VERSION_PATCH 0
+#define RAPIDOBJ_VERSION_PATCH 1
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
