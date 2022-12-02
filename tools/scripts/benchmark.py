@@ -2,15 +2,28 @@
 import matplotlib.pyplot as plt
 import argparse, os, subprocess, statistics, sys, time
 
-def measure(bench, parser, file, iterations):
+def measure(bench, parser, file, iterations, clear_cache):
     times = []
 
     prefix = 'Parse time [ms]:'
 
-    for i in range(1, iterations + 1):
-        rc = os.system("sudo echo 3 > /proc/sys/vm/drop_caches")
-        if rc != 0:
-            sys.exit('failed to clear page cache')
+    for i in range(int(iterations)):
+        if clear_cache:
+            try:
+                command = ['sudo', 'echo', '3', '>', '/proc/sys/vm/drop_caches']
+                subprocess.run(command, stdout=subprocess.DEVNULL, check=True)
+            except:
+                sys.exit()
+
+        if i == 0:
+            match parser:
+                case 'fast':
+                    print('\nParser: fast_obj')
+                case 'rapid':
+                    print('\nParser: rapidobj')
+                case 'tiny':
+                    print('\nParser: tinyobjloader')
+
         time.sleep(1)
         result = subprocess.run([bench, '--parser', parser, file], stdout=subprocess.PIPE).stdout.decode('ascii')
         lines = result.split('\n')
@@ -26,11 +39,11 @@ def measure(bench, parser, file, iterations):
             sys.exit(f'unexpected output from bench executable: {result!r}')
 
         times.append(t)
-        print(f'Iteration {i}: {t}ms')
+        print(f'Iteration {i+1}: {t}ms')
         time.sleep(2)
 
     tmin = min(times)
-    tstdev = statistics.stdev(times)
+    tstdev = statistics.stdev(times) if i > 1 else 0
 
     print(f'Min: {tmin}ms')
     print(f'Standard Deviation: {tstdev}')
@@ -43,12 +56,16 @@ def parse_args():
     arg_parser.add_argument("-b", "--bench", help="path to bench executable", metavar="path")
     arg_parser.add_argument("-o", "--out", help="output path", metavar="path")
     arg_parser.add_argument("-i", "--iterations", help="number of iterations per run", metavar="num")
+    arg_parser.add_argument("-c", "--clear-cache", action='store_true', help="clear page cache before each run")
+    arg_parser.add_argument("-s", "--style", choices=['default', 'light', 'dark', 'both'], default="default", metavar="choice", help="choice is one of: default, light, dark, both")
     args = arg_parser.parse_args()
 
     bench = args.bench or '.'
     iterations = args.iterations or 10
     file = args.file
     out = args.out
+    clear_cache = args.clear_cache
+    style = args.style
 
     if os.path.isdir(bench):
         if os.name == 'nt':
@@ -84,55 +101,75 @@ def parse_args():
 
     outfile = os.path.join(outdir, outfile)
 
-    return [bench, iterations, file, outfile]
+    return [bench, iterations, file, outfile, clear_cache, style]
 
-def plot(filename, outfile, parsers, times, errors):
+def configure_plot(parsers, times, errors, file, style):
+
     green = [0.18, 0.72, 0.47, 1.0]
     orange = [1.0, 0.5, 0.0, 1.0]
     blue = [0.12, 0.47, 0.71, 1.0]
 
     plt.rcdefaults()
+    plt.style.use(style)
+
     _fig, ax = plt.subplots()
 
     ax.barh(parsers, times, xerr = errors, align='center', color=[green, orange, blue])
     ax.set_xlabel('time in ms (lower is better)')
     ax.invert_yaxis()
-    ax.set_title(filename)
+    ax.set_title(file)
 
-    print(f'Saving figure {outfile!r}')
+def plot(filename, outfile, parsers, times, errors, style):
 
-    plt.savefig(fname=outfile, transparent=True, bbox_inches='tight')
+    [dir, file] = os.path.split(outfile)
+    [file, _ext]  = os.path.splitext(file)
+
+    default = style == 'default'
+    light = style == 'light' or style == 'both'
+    dark = style == 'dark' or style == 'both'
+
+    if default:
+        configure_plot(parsers, times, errors, file, 'bmh')
+        print(f'Saving figure {outfile!r}')
+        plt.savefig(fname=outfile, transparent=False, bbox_inches='tight')
+
+    if light:
+        configure_plot(parsers, times, errors, file, 'default')
+        outfile = os.path.join(dir, file + '-light.svg')
+        print(f'Saving figure {outfile!r}')
+        plt.savefig(fname=outfile, transparent=True, bbox_inches='tight')
+
+    if dark:
+        configure_plot(parsers, times, errors, file, 'dark_background')
+        outfile = os.path.join(dir, file + '-dark.svg')
+        print(f'Saving figure {outfile!r}')
+        plt.savefig(fname=outfile, transparent=True, bbox_inches='tight')
 
 def main():
 
-    bench, iterations, file, outfile = parse_args()
+    bench, iterations, file, outfile, clear_cache, style = parse_args()
+
+    if not clear_cache:
+        print("Warming page cache...")
+        with open(file) as f:
+            data = f.readlines()
+
+    fast_min, fast_stdev = measure(bench, 'fast', file, iterations, clear_cache)
+
+    time.sleep(3)
+
+    rapid_min, rapid_stdev = measure(bench, 'rapid', file, iterations, clear_cache)
+
+    time.sleep(3)
+
+    tiny_min, tiny_stdev = measure(bench, 'tiny', file, iterations, clear_cache)
 
     filename = os.path.basename(file)
-
-    print()
-    print(f'Parsing {filename!r}')
-
-    print()
-    print('Using parser: fast_obj')
-    fast_min, fast_stdev = measure(bench, 'fast', file, iterations)
-
-    time.sleep(3)
-
-    print()
-    print('Using parser: rapidobj')
-    rapid_min, rapid_stdev = measure(bench, 'rapid', file, iterations)
-
-    time.sleep(3)
-
-    print()
-    print('Using parser: tinyobjloader')
-    tiny_min, tiny_stdev = measure(bench, 'tiny', file, iterations)
-
     parsers = ('fast_obj', 'rapidobj', 'tinyobjloader')
     times = [fast_min, rapid_min, tiny_min]
     errors = [fast_stdev, rapid_stdev, tiny_stdev]
 
-    plot(filename, outfile, parsers, times, errors)
+    plot(filename, outfile, parsers, times, errors, style)
 
     print('Done')
 
