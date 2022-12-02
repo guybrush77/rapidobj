@@ -74,6 +74,7 @@ FetchContent_MakeAvailable(fast_obj)
 FetchContent_Declare(
     tinyobjloader
     GIT_REPOSITORY    https://github.com/tinyobjloader/tinyobjloader
+    GIT_TAG           origin/release
     GIT_SHALLOW       TRUE
 )
 
