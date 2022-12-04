@@ -6,6 +6,7 @@
 ![Build Status](https://github.com/guybrush77/rapidobj/actions/workflows/build.yml/badge.svg?event=push)
 
 - [About](#about)
+- [Benchmarks](#benchmarks)
 - [Integration](#integration)
   - [Prerequisites](#prerequisites)
   - [Manual Integration](#manual-integration)
@@ -31,11 +32,17 @@
 
 ## About
 
-rapidobj is an easy-to-use, single-header C++17 library that loads and parses [Wavefront .obj files](https://en.wikipedia.org/wiki/Wavefront_.obj_file).
+rapidobj is an easy-to-use and fast single-header C++17 library that loads and parses [Wavefront .obj files](https://en.wikipedia.org/wiki/Wavefront_.obj_file).
 
 The .obj file format was first used by Wavefront Technologies around 1990. However, this 3D geometry file format did not age well. An .obj file is a text file and, consequently, large models take a lot of of disk space and are slow to load and parse. Moreover, after loading and parsing, additional processing steps are required to transform the data into a format suitable for hardware (i.e. GPU) rendering. Nevertheless, .obj files are common enough that it's useful to have an efficient way to parse them.
 
-rapidobj's API was influenced by another single header C++ library, [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader). From users' point of view, the two libraries look fairly similar. That said, tinyobjloader has been around for some time; it is a mature and well tested library. So, why use rapidobj library? It is fast, and especially so when parsing large files. It was designed to take full advantage of modern computer hardware. See [Benchmarks](docs/BENCHMARKS.md) page.
+## Benchmarks
+
+rapidobj's API was influenced by another single header C++ library, [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader). From users' point of view, the two libraries look fairly similar. That said, tinyobjloader has been around for some time; it is a mature and well tested library. So, why use rapidobj library? It is fast, and especially so when parsing large files. It was designed to take full advantage of modern computer hardware.
+
+See [Benchmarks](docs/BENCHMARKS.md) page.
+
+For an independent evaluation of this and other.obj parsers, check out [Comparing .obj parse libraries](https://aras-p.info/blog/2022/05/14/comparing-obj-parse-libraries/).
 
 ## Integration
 
