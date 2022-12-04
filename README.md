@@ -42,7 +42,7 @@ rapidobj's API was influenced by another single header C++ library, [tinyobjload
 
 See [Benchmarks](docs/BENCHMARKS.md) page.
 
-For an independent evaluation of this and other.obj parsers, check out [Comparing .obj parse libraries](https://aras-p.info/blog/2022/05/14/comparing-obj-parse-libraries/).
+For an independent evaluation of this and other .obj parsers, check out [Comparing .obj parse libraries](https://aras-p.info/blog/2022/05/14/comparing-obj-parse-libraries/).
 
 ## Integration
 
