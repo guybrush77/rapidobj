@@ -43,12 +43,14 @@ def measure(bench, parser, file, iterations, clear_cache):
         time.sleep(2)
 
     tmin = min(times)
-    tstdev = statistics.stdev(times) if i > 1 else 0
+    tavg = statistics.mean(times)
+    tstdev = statistics.stdev(times) if i > 0 else 0
 
-    print(f'Min: {tmin}ms')
+    print(f'Minimum: {tmin}ms')
+    print(f'Average: {tavg}ms')
     print(f'Standard Deviation: {tstdev}')
 
-    return [tmin, tstdev]
+    return [tavg, tstdev]
 
 def parse_args():
     arg_parser = argparse.ArgumentParser()
@@ -112,15 +114,21 @@ def configure_plot(parsers, times, errors, file, style):
     plt.rcdefaults()
     plt.style.use(style)
 
-    _fig, ax = plt.subplots()
+    fig, ax = plt.subplots()
 
-    ax.barh(parsers, times, xerr = errors, align='center', color=[green, orange, blue])
+    fig.set_figwidth(6)
+    fig.set_figheight(3)
+
+    bars = ax.barh(parsers, times, xerr = errors, align='center', color=[green, orange, blue])
+
     ax.set_xlabel('time in ms (lower is better)')
     ax.invert_yaxis()
     ax.set_title(file)
+    ax.bar_label(bars, padding=5)
 
 def plot(filename, outfile, parsers, times, errors, style):
 
+    [_dir, name] = os.path.split(filename)
     [dir, file] = os.path.split(outfile)
     [file, _ext]  = os.path.splitext(file)
 
@@ -129,18 +137,18 @@ def plot(filename, outfile, parsers, times, errors, style):
     dark = style == 'dark' or style == 'both'
 
     if default:
-        configure_plot(parsers, times, errors, file, 'bmh')
+        configure_plot(parsers, times, errors, name, 'bmh')
         print(f'Saving figure {outfile!r}')
         plt.savefig(fname=outfile, transparent=False, bbox_inches='tight')
 
     if light:
-        configure_plot(parsers, times, errors, file, 'default')
+        configure_plot(parsers, times, errors, name, 'default')
         outfile = os.path.join(dir, file + '-light.svg')
         print(f'Saving figure {outfile!r}')
         plt.savefig(fname=outfile, transparent=True, bbox_inches='tight')
 
     if dark:
-        configure_plot(parsers, times, errors, file, 'dark_background')
+        configure_plot(parsers, times, errors, name, 'dark_background')
         outfile = os.path.join(dir, file + '-dark.svg')
         print(f'Saving figure {outfile!r}')
         plt.savefig(fname=outfile, transparent=True, bbox_inches='tight')
