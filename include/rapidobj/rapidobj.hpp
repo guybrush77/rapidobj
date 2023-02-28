@@ -6785,6 +6785,7 @@ inline void ProcessBlocksImpl(
     assert(reader);
 
     bool begin_parsing_after_eol = block_begin > 0;
+    bool reached_eof             = false;
 
     auto buffer_size = kMaxLineLength + kBlockSize;
     auto buffer1     = std::unique_ptr<char, sys::AlignedDeleter>(sys::AlignedAllocate(buffer_size, 4_KiB));
@@ -6807,7 +6808,8 @@ inline void ProcessBlocksImpl(
         chunk->error = Error{ ec };
         return;
     } else {
-        text = std::string_view(front_buffer + kMaxLineLength, bytes_read);
+        reached_eof = bytes_read < kBlockSize;
+        text        = std::string_view(front_buffer + kMaxLineLength, bytes_read);
     }
 
     if (begin_parsing_after_eol) {
@@ -6825,7 +6827,7 @@ inline void ProcessBlocksImpl(
     for (size_t i = block_begin; i != block_end; ++i) {
         auto remainder = size_t{};
 
-        bool last_block = i + 1 == block_end;
+        bool last_block = (i + 1 == block_end) || reached_eof;
 
         if (!last_block) {
             file_offset = (i + 1) * kBlockSize;
@@ -6902,9 +6904,11 @@ inline void ProcessBlocksImpl(
                 chunk->error = Error{ ec };
                 return;
             }
-
+            reached_eof = bytes_read < kBlockSize;
             std::swap(front_buffer, back_buffer);
             text = std::string_view(front_buffer + kMaxLineLength - remainder, bytes_read + remainder);
+        } else if (reached_eof) {
+            break;
         }
     }
 }
