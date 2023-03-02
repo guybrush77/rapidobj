@@ -14,6 +14,8 @@ using namespace rapidobj;
 
 static const std::string objpath = QUOTE(TEST_DATA_DIR) "/mtllib/cube.obj";
 
+static const std::string objpath_mtllib_missing = QUOTE(TEST_DATA_DIR) "/mtllib/cube_mtllib_missing.obj";
+
 static constexpr auto purple_materials = R"(
 
 newmtl foo
@@ -91,6 +93,66 @@ TEST_CASE("rapidobj::MaterialLibrary")
         CHECK(kWhite == result.materials.front().diffuse);
 
         CHECK(IDsOkay(result.shapes.front().mesh.material_ids));
+    }
+
+    // Default MaterialLibrary mandatory load
+    {
+        auto mtllib = MaterialLibrary::Default(Load::Mandatory);
+
+        auto result = ParseFile(objpath, mtllib);
+
+        CHECK(kSuccess == result.error.code);
+
+        CHECK(3 == result.materials.size());
+
+        CHECK("foo" == result.materials.front().name);
+        CHECK(kWhite == result.materials.front().diffuse);
+
+        CHECK(IDsOkay(result.shapes.front().mesh.material_ids));
+    }
+
+    // Default MaterialLibrary implicit, missing mtllib
+    {
+        auto result = ParseFile(objpath_mtllib_missing);
+
+        CHECK(rapidobj_errc::MaterialFileError == result.error.code);
+
+        CHECK(result.materials.empty());
+    }
+
+    // Default MaterialLibrary explicit, missing mtllib
+    {
+        auto mtllib = MaterialLibrary::Default();
+
+        auto result = ParseFile(objpath_mtllib_missing, mtllib);
+
+        CHECK(rapidobj_errc::MaterialFileError == result.error.code);
+
+        CHECK(result.materials.empty());
+    }
+
+    // Default MaterialLibrary optional load, missing mtllib
+    {
+        auto mtllib = MaterialLibrary::Default(Load::Optional);
+
+        auto result = ParseFile(objpath_mtllib_missing, mtllib);
+
+        CHECK(kSuccess == result.error.code);
+
+        CHECK(result.materials.empty());
+
+        CHECK(IDsOkay(result.shapes.front().mesh.material_ids));
+    }
+
+    // Default MaterialLibrary mandatory load, missing mtllib
+    {
+        auto mtllib = MaterialLibrary::Default(Load::Mandatory);
+
+        auto result = ParseFile(objpath_mtllib_missing, mtllib);
+
+        CHECK(rapidobj_errc::MaterialFileError == result.error.code);
+
+        CHECK(result.materials.empty());
     }
 
     // Search path MaterialLibrary

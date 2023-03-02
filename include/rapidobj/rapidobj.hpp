@@ -82,7 +82,7 @@ static constexpr struct {
 enum class Load { Mandatory, Optional };
 
 struct MaterialLibrary final {
-    static MaterialLibrary Default(Load policy = Load::Mandatory) { return MaterialLibrary({ "." }, policy); }
+    static MaterialLibrary Default(Load policy = Load::Mandatory) { return MaterialLibrary(policy); }
 
     static MaterialLibrary SearchPath(std::filesystem::path path, Load policy = Load::Mandatory)
     {
@@ -96,19 +96,20 @@ struct MaterialLibrary final {
 
     static MaterialLibrary String(std::string_view text) { return MaterialLibrary(text); }
 
-    static MaterialLibrary Ignore() { return MaterialLibrary(); }
+    static MaterialLibrary Ignore() { return MaterialLibrary(nullptr); }
 
     const auto& Value() const noexcept { return m_value; }
     auto        Policy() const noexcept { return m_policy; }
 
   private:
-    MaterialLibrary() noexcept = default;
+    MaterialLibrary(Load policy) noexcept : m_policy(policy) {}
     MaterialLibrary(std::vector<std::filesystem::path>&& paths, Load policy) noexcept
         : m_value(std::move(paths)), m_policy(policy)
     {}
     MaterialLibrary(std::string_view text) noexcept : m_value(text) {}
+    MaterialLibrary(std::nullptr_t) noexcept : m_value(nullptr) {}
 
-    using Variant = std::variant<std::monostate, std::vector<std::filesystem::path>, std::string_view>;
+    using Variant = std::variant<std::monostate, std::nullptr_t, std::vector<std::filesystem::path>, std::string_view>;
 
     Variant m_value{};
     Load    m_policy{};
@@ -331,6 +332,8 @@ struct [[nodiscard]] Result final {
 inline Result ParseFile(
     const std::filesystem::path& obj_filepath,
     const MaterialLibrary&       mtl_library = MaterialLibrary::Default());
+
+inline Result ParseStream(std::istream& obj_stream, const MaterialLibrary& mtl_library = MaterialLibrary::Default());
 
 inline bool Triangulate(Result& result);
 
@@ -4124,6 +4127,7 @@ enum class rapidobj_errc {
     MaterialFileError,
     MaterialParseError,
     MaterialNotFoundError,
+    MaterialRelativePathError,
     AmbiguousMaterialLibraryError,
     LineTooLongError,
     IndexOutOfBoundsError,
@@ -4151,6 +4155,7 @@ struct rapidobj_error_category : std::error_category {
         case rapidobj_errc::MaterialFileError: return "Material file not found.";
         case rapidobj_errc::MaterialParseError: return "Material file parse error.";
         case rapidobj_errc::MaterialNotFoundError: return "Material not found.";
+        case rapidobj_errc::MaterialRelativePathError: return "Material file path is relative.";
         case rapidobj_errc::AmbiguousMaterialLibraryError: return "Ambiguous material library.";
         case rapidobj_errc::LineTooLongError: return "Line too long.";
         case rapidobj_errc::IndexOutOfBoundsError: return "Index out of bounds.";
@@ -5174,6 +5179,69 @@ struct FileReader : Reader {
 #endif
 
 } // namespace sys
+
+using DataSource = std::variant<sys::File*, std::istream*>;
+
+struct StreamReader : Reader {
+    StreamReader(std::istream* is) noexcept : m_stream(is)
+    {
+        assert(is);
+        if (!is->good()) {
+            m_error = std::make_error_code(std::io_errc::stream);
+        }
+    }
+
+    std::error_code ReadBlock(size_t offset, size_t size, char* buffer) override
+    {
+        assert(buffer);
+
+        ++m_num_requests;
+
+        m_offset = offset;
+        m_size   = size;
+        m_buffer = buffer;
+
+        return std::error_code();
+    }
+
+    ReadResult WaitForResult() override
+    {
+        ReadResult result{};
+
+        auto t1 = std::chrono::steady_clock::now();
+
+        if (m_stream->read(m_buffer, m_size) || m_stream->eof()) {
+            result = { static_cast<size_t>(m_stream->gcount()), std::error_code() };
+        } else {
+            result = { size_t{}, std::make_error_code(std::io_errc::stream) };
+        }
+
+        auto t2 = std::chrono::steady_clock::now();
+
+        m_wait_time += t2 - t1;
+
+        return result;
+    }
+
+  private:
+    std::istream* m_stream{};
+    size_t        m_offset{};
+    size_t        m_size{};
+    char*         m_buffer{};
+};
+
+inline std::unique_ptr<Reader> CreateReader(sys::File* file)
+{
+    return std::make_unique<sys::FileReader>(*file);
+}
+inline std::unique_ptr<Reader> CreateReader(std::istream* is)
+{
+    return std::make_unique<StreamReader>(is);
+}
+inline std::unique_ptr<Reader> CreateReader(DataSource source)
+{
+    return std::visit([](auto arg) { return CreateReader(arg); }, source);
+}
 
 inline std::string ToString(std::chrono::nanoseconds time, int width = 0)
 {
@@ -6914,7 +6982,7 @@ inline void ProcessBlocksImpl(
 }
 
 inline void ProcessBlocks(
-    sys::File*                     file,
+    DataSource                     source,
     size_t                         thread_index,
     size_t                         block_begin,
     size_t                         block_end,
@@ -6922,19 +6990,18 @@ inline void ProcessBlocks(
     Chunk*                         chunk,
     std::shared_ptr<SharedContext> context)
 {
-    assert(file);
     assert(chunk);
     assert(context);
     assert(block_begin < block_end);
 
     auto t1 = std::chrono::steady_clock::now();
 
-    auto reader = sys::FileReader(*file);
+    auto reader = CreateReader(source);
 
-    if (reader.Error()) {
-        chunk->error = Error{ reader.Error() };
+    if (reader->Error()) {
+        chunk->error = Error{ reader->Error() };
     } else {
-        ProcessBlocksImpl(&reader, block_begin, block_end, stop_parsing_after_eol, chunk, context.get());
+        ProcessBlocksImpl(reader.get(), block_begin, block_end, stop_parsing_after_eol, chunk, context.get());
     }
 
     if (1 == std::atomic_fetch_sub(&context->parsing.thread_count, size_t(1))) {
@@ -6945,9 +7012,9 @@ inline void ProcessBlocks(
 
     auto parse_time = t2 - t1;
 
-    context->debug.io.n_requests[thread_index]  = reader.NumRequests();
-    context->debug.io.submit_time[thread_index] = reader.SubmitTime();
-    context->debug.io.wait_time[thread_index]   = reader.WaitTime();
+    context->debug.io.n_requests[thread_index]  = reader->NumRequests();
+    context->debug.io.submit_time[thread_index] = reader->SubmitTime();
+    context->debug.io.wait_time[thread_index]   = reader->WaitTime();
     context->debug.parse.time[thread_index]     = parse_time;
 }
 
@@ -6963,15 +7030,18 @@ inline void ParseFileSequential(sys::File* file, std::vector<Chunk>* chunks, std
     context->debug.io.wait_time.resize(1);
     context->debug.parse.time.resize(1);
 
+    auto source = DataSource(file);
+
     auto num_blocks             = file->size() / kBlockSize + (file->size() % kBlockSize != 0);
     auto stop_parsing_after_eol = false;
     auto chunk                  = &chunks->front();
 
-    ProcessBlocks(file, 0, 0, num_blocks, stop_parsing_after_eol, chunk, context);
+    ProcessBlocks(source, 0, 0, num_blocks, stop_parsing_after_eol, chunk, context);
 }
 
 inline void ParseFileParallel(sys::File* file, std::vector<Chunk>* chunks, std::shared_ptr<SharedContext> context)
 {
+    auto source                = DataSource(file);
     auto num_blocks            = file->size() / kBlockSize + (file->size() % kBlockSize != 0);
     auto num_threads           = std::thread::hardware_concurrency();
     auto num_blocks_per_thread = num_blocks / num_threads;
@@ -6998,10 +7068,10 @@ inline void ParseFileParallel(sys::File* file, std::vector<Chunk>* chunks, std::
     auto num_tasks = tasks.size();
     auto threads   = std::vector<std::thread>{};
 
+    chunks->resize(num_tasks);
+
     context->thread.concurrency   = num_threads;
     context->parsing.thread_count = num_tasks;
-
-    chunks->resize(num_tasks);
 
     context->debug.io.n_requests.resize(num_threads);
     context->debug.io.submit_time.resize(num_threads);
@@ -7018,7 +7088,7 @@ inline void ParseFileParallel(sys::File* file, std::vector<Chunk>* chunks, std::
         bool stop_parsing_after_eol = !is_last;
         auto chunk                  = &(*chunks)[i];
 
-        threads.emplace_back(ProcessBlocks, file, i, begin, end, stop_parsing_after_eol, chunk, context);
+        threads.emplace_back(ProcessBlocks, source, i, begin, end, stop_parsing_after_eol, chunk, context);
         threads.back().detach();
     }
 
@@ -7026,7 +7096,7 @@ inline void ParseFileParallel(sys::File* file, std::vector<Chunk>* chunks, std::
     context->parsing.completed.get_future().wait();
 }
 
-inline Result ParseFile(const std::filesystem::path& filepath, const MaterialLibrary& mtllib)
+inline Result ParseFile(const std::filesystem::path& filepath, const MaterialLibrary& material_library)
 {
     if (filepath.empty()) {
         auto error = std::make_error_code(std::errc::invalid_argument);
@@ -7039,12 +7109,23 @@ inline Result ParseFile(const std::filesystem::path& filepath, const MaterialLib
         return Result{ Attributes{}, Shapes{}, Materials{}, Error{ file.error() } };
     }
 
+    const auto material_library_value   = &material_library.Value();
+    const auto default_material_library = MaterialLibrary::SearchPath(".", material_library.Policy());
+
     auto context = std::make_shared<SharedContext>();
 
-    context->material.library = std::holds_alternative<std::monostate>(mtllib.Value()) ? nullptr : &mtllib;
+    context->material.basepath = filepath.parent_path();
 
-    if (std::holds_alternative<std::vector<std::filesystem::path>>(mtllib.Value())) {
-        context->material.basepath = filepath.parent_path();
+    if (auto* null = std::get_if<std::nullptr_t>(material_library_value)) {
+        context->material.library = nullptr;
+    } else if (auto* none = std::get_if<std::monostate>(material_library_value)) {
+        context->material.library = &default_material_library;
+    } else if (auto* paths = std::get_if<std::vector<std::filesystem::path>>(material_library_value)) {
+        context->material.library = &material_library;
+    } else if (auto* string = std::get_if<std::string_view>(material_library_value)) {
+        context->material.library = &material_library;
+    } else {
+        return Result{ Attributes{}, Shapes{}, Materials{}, Error{ rapidobj_errc::InternalError } };
     }
 
     auto chunks = std::vector<Chunk>();
@@ -7089,6 +7170,70 @@ inline Result ParseFile(const std::filesystem::path& filepath, const MaterialLib
 
     // Free memory in a different thread
     if (memory > kMemoryRecyclingSize) {
+        auto recycle = std::thread([](std::vector<Chunk>&&) {}, std::move(chunks));
+        recycle.detach();
+    }
+
+    return result;
+}
+
+inline Result ParseStream(std::istream& is, const MaterialLibrary& material_library)
+{
+    auto context                = std::make_shared<SharedContext>();
+    auto chunks                 = std::vector<Chunk>(1);
+    auto source                 = DataSource(&is);
+    auto num_blocks             = std::numeric_limits<size_t>::max();
+    auto stop_parsing_after_eol = false;
+    auto chunk                  = &chunks.front();
+    auto material_library_value = &material_library.Value();
+
+    if (auto* null = std::get_if<std::nullptr_t>(material_library_value)) {
+        context->material.library = nullptr;
+    } else if (auto* none = std::get_if<std::monostate>(material_library_value)) {
+        context->material.library = nullptr;
+    } else if (auto* paths = std::get_if<std::vector<std::filesystem::path>>(material_library_value)) {
+        if (std::any_of(paths->begin(), paths->end(), [](auto& path) { return path.is_relative(); })) {
+            return Result{ Attributes{}, Shapes{}, Materials{}, Error{ rapidobj_errc::MaterialRelativePathError } };
+        }
+        context->material.library = &material_library;
+    } else if (auto* string = std::get_if<std::string_view>(material_library_value)) {
+        context->material.library = &material_library;
+    } else {
+        return Result{ Attributes{}, Shapes{}, Materials{}, Error{ rapidobj_errc::InternalError } };
+    }
+
+    context->thread.concurrency   = 1;
+    context->parsing.thread_count = 1;
+
+    context->debug.io.n_requests.resize(1);
+    context->debug.io.submit_time.resize(1);
+    context->debug.io.wait_time.resize(1);
+    context->debug.parse.time.resize(1);
+
+    auto t1 = std::chrono::steady_clock::now();
+
+    ProcessBlocks(source, 0, 0, num_blocks, stop_parsing_after_eol, chunk, context);
+
+    auto t2 = std::chrono::steady_clock::now();
+
+    context->debug.parse.total_time = t2 - t1;
+
+    if (chunks.front().error.code) {
+        return Result{ Attributes{}, Shapes{}, Materials{}, chunks.front().error };
+    }
+
+    t1 = std::chrono::steady_clock::now();
+
+    auto result = Merge(chunks, context);
+
+    t2 = std::chrono::steady_clock::now();
+
+    context->debug.merge.total_time = t2 - t1;
+
+    // std::cout << DumpDebug(file, *context);
+
+    // Free memory in a different thread
+    if (SizeInBytes(chunks.front()) > kMemoryRecyclingSize) {
         auto recycle = std::thread([](std::vector<Chunk>&&) {}, std::move(chunks));
         recycle.detach();
     }
@@ -7481,12 +7626,25 @@ inline bool Triangulate(Result& result)
 /// <summary>
 /// Loads and parses Wavefront geometry definition file (.obj file).
 /// </summary>
-/// <param name="obj_filepath">- Path of the .obj file to parse.</param>
-/// <param name="mtl_library">- Optional material library.</param>
+/// <param name="obj_filepath"> : path of the .obj file to parse.</param>
+/// <param name="mtl_library"> : optional material library.</param>
 /// <returns>Parsed data stored in Result class.</returns>
 inline Result ParseFile(const std::filesystem::path& obj_filepath, const MaterialLibrary& mtl_library)
 {
     return detail::ParseFile(obj_filepath, mtl_library);
+}
+
+/// <summary>
+/// Loads and parses Wavefront geometry definition data from an input stream.
+/// Because input streams are sequential, which prevents parsing parallelization,
+/// this function is less performant compared to the ParseFile() function.
+/// </summary>
+/// <param name="obj_stream"> : input stream to parse.</param>
+/// <param name="mtl_library"> : optional material library.</param>
+/// <returns>Parsed data stored in Result class.</returns>
+inline Result ParseStream(std::istream& obj_stream, const MaterialLibrary& mtl_library)
+{
+    return detail::ParseStream(obj_stream, mtl_library);
 }
 
 inline bool Triangulate(Result& result)
