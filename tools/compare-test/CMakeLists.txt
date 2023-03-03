@@ -11,4 +11,4 @@ target_include_directories(compare-test PUBLIC include)
 
 target_compile_features(compare-test PRIVATE cxx_std_17)
 
-target_link_libraries(compare-test PRIVATE serializer)
+target_link_libraries(compare-test PUBLIC rapidobj PRIVATE serializer)

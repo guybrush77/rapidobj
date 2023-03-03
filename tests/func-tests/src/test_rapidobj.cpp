@@ -13,15 +13,10 @@ static auto MakeTest(const std::string& path)
 {
     static const std::string basepath = QUOTE(TEST_DATA_DIR);
 
-    return rapidobj::test::ParseTest(basepath + "/" + path, rapidobj::test::Triangulate::No);
+    return rapidobj::test::ParseTest(basepath + "/" + path);
 }
 
-static auto MakeTestTriangulated(const std::string& path)
-{
-    static const std::string basepath = QUOTE(TEST_DATA_DIR);
-
-    return rapidobj::test::ParseTest(basepath + "/" + path, rapidobj::test::Triangulate::Yes);
-}
+using rapidobj::test::Triangulate;
 
 TEST_CASE("color")
 {
@@ -29,16 +24,18 @@ TEST_CASE("color")
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.ParseFile(Triangulate::No));
+    CHECK(test.ParseStream(Triangulate::No));
 }
 
 TEST_CASE("color-triangulated")
 {
-    auto test = MakeTestTriangulated("color/color.obj.tri.test");
+    auto test = MakeTest("color/color.obj.tri.test");
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.ParseFile(Triangulate::Yes));
+    CHECK(test.ParseStream(Triangulate::Yes));
 }
 
 TEST_CASE("cube")
@@ -47,16 +44,18 @@ TEST_CASE("cube")
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.ParseFile(Triangulate::No));
+    CHECK(test.ParseStream(Triangulate::No));
 }
 
 TEST_CASE("cube-triangulated")
 {
-    auto test = MakeTestTriangulated("cube/cube.obj.tri.test");
+    auto test = MakeTest("cube/cube.obj.tri.test");
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.ParseFile(Triangulate::Yes));
+    CHECK(test.ParseStream(Triangulate::Yes));
 }
 
 TEST_CASE("mario")
@@ -65,16 +64,18 @@ TEST_CASE("mario")
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.ParseFile(Triangulate::No));
+    CHECK(test.ParseStream(Triangulate::No));
 }
 
 TEST_CASE("mario-triangulated")
 {
-    auto test = MakeTestTriangulated("mario/mario.obj.tri.test");
+    auto test = MakeTest("mario/mario.obj.tri.test");
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.ParseFile(Triangulate::Yes));
+    CHECK(test.ParseStream(Triangulate::Yes));
 }
 
 TEST_CASE("primitives")
@@ -83,16 +84,18 @@ TEST_CASE("primitives")
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.ParseFile(Triangulate::No));
+    CHECK(test.ParseStream(Triangulate::No));
 }
 
 TEST_CASE("primitives-triangulated")
 {
-    auto test = MakeTestTriangulated("primitives/primitives.obj.tri.test");
+    auto test = MakeTest("primitives/primitives.obj.tri.test");
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.ParseFile(Triangulate::Yes));
+    CHECK(test.ParseStream(Triangulate::Yes));
 }
 
 TEST_CASE("sponza")
@@ -101,16 +104,18 @@ TEST_CASE("sponza")
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.ParseFile(Triangulate::No));
+    CHECK(test.ParseStream(Triangulate::No));
 }
 
 TEST_CASE("sponza-triangulated")
 {
-    auto test = MakeTestTriangulated("sponza/sponza.obj.tri.test");
+    auto test = MakeTest("sponza/sponza.obj.tri.test");
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.ParseFile(Triangulate::Yes));
+    CHECK(test.ParseStream(Triangulate::Yes));
 }
 
 TEST_CASE("teapot")
@@ -119,14 +124,16 @@ TEST_CASE("teapot")
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.ParseFile(Triangulate::No));
+    CHECK(test.ParseStream(Triangulate::No));
 }
 
 TEST_CASE("teapot-triangulated")
 {
-    auto test = MakeTestTriangulated("teapot/teapot.obj.tri.test");
+    auto test = MakeTest("teapot/teapot.obj.tri.test");
 
     CHECK(test.IsTestValid());
 
-    CHECK(test.IsEqualToReference());
+    CHECK(test.ParseFile(Triangulate::Yes));
+    CHECK(test.ParseStream(Triangulate::Yes));
 }

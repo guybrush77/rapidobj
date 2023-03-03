@@ -2,20 +2,27 @@
 
 #include "serializer/serializer.hpp"
 
+#include <optional>
+
 namespace rapidobj::test {
 
-bool ParseTest::IsTestValid() const
+struct Files {
+    std::filesystem::path input;
+    std::filesystem::path reference;
+};
+
+std::optional<Files> GetFiles(const std::filesystem::path& test_file)
 {
     namespace fs = std::filesystem;
 
-    if (!fs::exists(m_test_file) || !fs::is_regular_file(m_test_file)) {
-        return false;
+    if (!fs::exists(test_file) || !fs::is_regular_file(test_file)) {
+        return std::nullopt;
     }
 
-    auto file = std::ifstream(m_test_file);
+    auto file = std::ifstream(test_file);
 
     if (file.bad()) {
-        return false;
+        return std::nullopt;
     }
 
     auto input = std::array<std::string, 5>();
@@ -28,49 +35,62 @@ bool ParseTest::IsTestValid() const
 
     if (filename.empty() || refname.empty() || filehash.length() != 32 || refhash.length() != 32 ||
         separator != std::string(32, '-')) {
-        return false;
+        return std::nullopt;
     }
 
-    auto filepath = m_test_file.parent_path() / filename;
-    auto refpath  = m_test_file.parent_path() / refname;
+    auto filepath = test_file.parent_path() / filename;
+    auto refpath  = test_file.parent_path() / refname;
 
     if (!fs::exists(filepath) || !fs::exists(refpath) || !fs::is_regular_file(filepath) ||
         !fs::is_regular_file(refpath)) {
-        return false;
+        return std::nullopt;
     }
 
     if (rapidobj::serializer::ComputeFileHash(filepath) != filehash ||
         rapidobj::serializer::ComputeFileHash(refpath) != refhash) {
-        return false;
+        return std::nullopt;
     }
 
-    return true;
+    return Files{ filepath, refpath };
 }
 
-bool ParseTest::IsEqualToReference() const
+ParseTest::ParseTest(std::filesystem::path test_file)
 {
-    auto file = std::ifstream(m_test_file);
-
-    auto input = std::array<std::string, 5>();
-
-    for (size_t i = 0; i != 5; ++i) {
-        file >> input[i];
+    if (auto files = GetFiles(test_file)) {
+        m_input_file = files->input;
+        m_reference  = rapidobj::serializer::Deserialize(files->reference);
     }
+}
 
-    auto& [filename, filehash, separator, refname, refhash] = input;
+bool ParseTest::IsTestValid() const
+{
+    return !m_input_file.empty();
+}
 
-    auto filepath = m_test_file.parent_path() / filename;
-    auto refpath  = m_test_file.parent_path() / refname;
+bool ParseTest::ParseFile(Triangulate triangulate) const
+{
+    auto result = rapidobj::ParseFile(m_input_file);
 
-    auto ref_result = rapidobj::serializer::Deserialize(refpath);
-
-    auto result = rapidobj::ParseFile(filepath);
-
-    if (m_triangulate == Triangulate::Yes) {
+    if (triangulate == Triangulate::Yes) {
         rapidobj::Triangulate(result);
     }
 
-    return result == ref_result;
+    return result == m_reference;
+}
+
+bool ParseTest::ParseStream(Triangulate triangulate) const
+{
+    auto stream = std::ifstream(m_input_file);
+
+    auto mtllib = MaterialLibrary::SearchPath(m_input_file.parent_path());
+
+    auto result = rapidobj::ParseStream(stream, mtllib);
+
+    if (triangulate == Triangulate::Yes) {
+        rapidobj::Triangulate(result);
+    }
+
+    return result == m_reference;
 }
 
 } // namespace rapidobj::test
