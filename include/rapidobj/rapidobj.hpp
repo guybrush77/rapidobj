@@ -35,6 +35,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 #include <fstream>
 #include <future>
 #include <map>
+#include <optional>
 #include <string>
 #include <system_error>
 #include <thread>
@@ -82,7 +83,8 @@ static constexpr struct {
 enum class Load { Mandatory, Optional };
 
 struct MaterialLibrary final {
-    static MaterialLibrary Default(Load policy = Load::Mandatory) { return MaterialLibrary(policy); }
+    static MaterialLibrary Default() { return MaterialLibrary(); }
+    static MaterialLibrary Default(Load policy) { return MaterialLibrary(policy); }
 
     static MaterialLibrary SearchPath(std::filesystem::path path, Load policy = Load::Mandatory)
     {
@@ -99,9 +101,10 @@ struct MaterialLibrary final {
     static MaterialLibrary Ignore() { return MaterialLibrary(nullptr); }
 
     const auto& Value() const noexcept { return m_value; }
-    auto        Policy() const noexcept { return m_policy; }
+    const auto& Policy() const noexcept { return m_policy; }
 
   private:
+    MaterialLibrary() noexcept = default;
     MaterialLibrary(Load policy) noexcept : m_policy(policy) {}
     MaterialLibrary(std::vector<std::filesystem::path>&& paths, Load policy) noexcept
         : m_value(std::move(paths)), m_policy(policy)
@@ -111,8 +114,8 @@ struct MaterialLibrary final {
 
     using Variant = std::variant<std::monostate, std::nullptr_t, std::vector<std::filesystem::path>, std::string_view>;
 
-    Variant m_value{};
-    Load    m_policy{};
+    Variant             m_value{};
+    std::optional<Load> m_policy{};
 };
 
 template <typename T>
@@ -4131,6 +4134,7 @@ enum class rapidobj_errc {
     AmbiguousMaterialLibraryError,
     LineTooLongError,
     IndexOutOfBoundsError,
+    InvalidArgumentsError,
     TooFewIndicesError,
     TooManyIndicesError,
     TriangulationError,
@@ -4159,6 +4163,7 @@ struct rapidobj_error_category : std::error_category {
         case rapidobj_errc::AmbiguousMaterialLibraryError: return "Ambiguous material library.";
         case rapidobj_errc::LineTooLongError: return "Line too long.";
         case rapidobj_errc::IndexOutOfBoundsError: return "Index out of bounds.";
+        case rapidobj_errc::InvalidArgumentsError: return "Invalid Arguments.";
         case rapidobj_errc::TooFewIndicesError: return "Polygon has too few indices.";
         case rapidobj_errc::TooManyIndicesError: return "Polygon has too many indices.";
         case rapidobj_errc::TriangulationError: return "Triangulation errror.";
@@ -7110,7 +7115,8 @@ inline Result ParseFile(const std::filesystem::path& filepath, const MaterialLib
     }
 
     const auto material_library_value   = &material_library.Value();
-    const auto default_material_library = MaterialLibrary::SearchPath(".", material_library.Policy());
+    const auto default_loading_policy   = material_library.Policy().value_or(Load::Mandatory);
+    const auto default_material_library = MaterialLibrary::SearchPath(".", default_loading_policy);
 
     auto context = std::make_shared<SharedContext>();
 
@@ -7121,6 +7127,9 @@ inline Result ParseFile(const std::filesystem::path& filepath, const MaterialLib
     } else if (auto* none = std::get_if<std::monostate>(material_library_value)) {
         context->material.library = &default_material_library;
     } else if (auto* paths = std::get_if<std::vector<std::filesystem::path>>(material_library_value)) {
+        if (paths->empty()) {
+            return Result{ Attributes{}, Shapes{}, Materials{}, Error{ rapidobj_errc::InvalidArgumentsError } };
+        }
         context->material.library = &material_library;
     } else if (auto* string = std::get_if<std::string_view>(material_library_value)) {
         context->material.library = &material_library;
@@ -7179,19 +7188,26 @@ inline Result ParseFile(const std::filesystem::path& filepath, const MaterialLib
 
 inline Result ParseStream(std::istream& is, const MaterialLibrary& material_library)
 {
-    auto context                = std::make_shared<SharedContext>();
-    auto chunks                 = std::vector<Chunk>(1);
-    auto source                 = DataSource(&is);
-    auto num_blocks             = std::numeric_limits<size_t>::max();
-    auto stop_parsing_after_eol = false;
-    auto chunk                  = &chunks.front();
-    auto material_library_value = &material_library.Value();
+    auto context                  = std::make_shared<SharedContext>();
+    auto chunks                   = std::vector<Chunk>(1);
+    auto source                   = DataSource(&is);
+    auto num_blocks               = std::numeric_limits<size_t>::max();
+    auto stop_parsing_after_eol   = false;
+    auto chunk                    = &chunks.front();
+    auto material_library_value   = &material_library.Value();
+    auto default_material_library = MaterialLibrary::SearchPaths({}, Load::Optional);
 
     if (auto* null = std::get_if<std::nullptr_t>(material_library_value)) {
         context->material.library = nullptr;
     } else if (auto* none = std::get_if<std::monostate>(material_library_value)) {
-        context->material.library = nullptr;
+        if (material_library.Policy()) {
+            return Result{ Attributes{}, Shapes{}, Materials{}, Error{ rapidobj_errc::InvalidArgumentsError } };
+        }
+        context->material.library = &default_material_library;
     } else if (auto* paths = std::get_if<std::vector<std::filesystem::path>>(material_library_value)) {
+        if (paths->empty()) {
+            return Result{ Attributes{}, Shapes{}, Materials{}, Error{ rapidobj_errc::InvalidArgumentsError } };
+        }
         if (std::any_of(paths->begin(), paths->end(), [](auto& path) { return path.is_relative(); })) {
             return Result{ Attributes{}, Shapes{}, Materials{}, Error{ rapidobj_errc::MaterialRelativePathError } };
         }
