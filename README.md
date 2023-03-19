@@ -312,7 +312,7 @@ Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::Defau
 
 Constructor used to specify .mtl file's relative or absolute search path and [loading policy](#load-policy).
 
-A relative search path's current directory is .obj file's parent folder. A relative search path only applies to the [`ParseFile`](#parsefile) function. Specifying a relative search path for the [`ParseStream`](#parsestream) function will generate an error.
+A relative search path's current directory is .obj file's parent folder. A relative search path only applies to the [`ParseFile`](#parsefile) function; specifying a relative search path for the [`ParseStream`](#parsestream) function will generate an error.
 
 <details>
 <summary><i>Show examples</i></summary>
@@ -347,7 +347,7 @@ Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::Searc
 
 Constructor used to specify multiple .mtl file's relative or absolute search paths and [loading policy](#load-policy). The paths are examined in order; the first .mtl file found will be loaded and parsed.
 
-A relative search path's current directory is .obj file's parent folder. A relative search path only applies to the [`ParseFile`](#parsefile) function. Specifying a relative search path for the [`ParseStream`](#parsestream) function will generate an error.
+A relative search path's current directory is .obj file's parent folder. A relative search path only applies to the [`ParseFile`](#parsefile) function; specifying a relative search path for the [`ParseStream`](#parsestream) function will generate an error.
 
 <details>
 <summary><i>Show examples</i></summary>
@@ -395,7 +395,7 @@ Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::Strin
 
 **`Ignore()`**
 
-Constructor used to instruct `Parse` functions to completely ignore any material libraries, regardless of whether they are present or not.  [`Result`](#result) [`Materials`](#materials) array will be empty. All [`Mesh::material_ids`](#meshmaterial_ids) arrays will be empty.
+Constructor used to instruct `Parse` functions to completely ignore any material libraries, regardless of whether they are present or not.  [`Result`](#result) [`Materials`](#materials) array will be empty. Moreover, all [`Mesh::material_ids`](#meshmaterial_ids) arrays will be empty.
 
 <details>
 <summary><i>Show examples</i></summary>
@@ -415,11 +415,11 @@ Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::Ignor
 
 ### Load Policy
 
-Load is passed as an argument to MaterialLibrary::SearchPath(s) constructors to specify which actions to take if the material library file cannot be opened.
+Load is passed as an argument to [`MaterialLibrary`](#materiallibrary) `SearchPath(s)` constructors to specify which actions to take if the material library file cannot be opened.
 
-Mandatory loading instructs the ParseFile function to immediately stop further execution and produce an error if the .mtl file cannot be opened.
+Mandatory loading instructs the [`ParseFile`](#parsefile) and [`ParseStream`](#parsestream) functions to immediately stop further execution and produce an error if the .mtl file cannot be opened.
 
-Optional loading instructs the ParseFile function to continue .obj loading and parsing, even if the .mtl file cannot be opened. However, Materials array will be empty. Mesh material_ids will contain ids assigned in order of appearance in the .obj file (0, 1, 2 etc.).
+Optional loading instructs the Parse functions to continue .obj loading and parsing, even if the .mtl file cannot be opened. No error will be generated. However, in this case, the [`Materials`](#materials) array will be empty. [`Mesh::material_ids`](#meshmaterial_ids) will contain ids assigned in order of appearance in the .obj file (0, 1, 2 etc.).
 
 **Signature:**
 
@@ -458,7 +458,7 @@ Result          result = ParseFile("/home/user/teapot/teapot.obj", mtllib);
 
 ### Triangulate
 
-Triangulate all meshes in the Result object.
+Triangulate all meshes in the [`Result`](#result) object.
 
 **Signature:**
 
@@ -468,7 +468,7 @@ bool Triangulate(Result& result)
 
 **Parameters:**
 
-- `result` - Result object obtained from calling ParseFile function.
+- `result` - [`Result`](#result) object returned from the [`ParseFile`](#parsefile) or [`ParseStream`](#parsestream) functions.
 
 **Result:**
 
@@ -712,7 +712,7 @@ The indices array defines points by indexing into vertex attribute arrays. It is
 
 ### Materials
 
-After ParseFunction loads and parses the .mtl file, all the material information is stored in the Result Materials array.
+After [`ParseFile`](#parsefile) or [`ParseStream`](#parsestream) function loads and parses the .mtl file, all the material information is stored in the  [`Result`](#result) Materials array.
 
 #### Material Parameters
 
@@ -786,7 +786,7 @@ After ParseFunction loads and parses the .mtl file, all the material information
 
 ## Example
 
-Suppose we want to find out the total number of triangles in an .obj file. This can be accomplished by passing the .obj file path to```ParseFile()``` and triangulating the result. The next step is looping through all the meshes; in each iteration, the number of triangles in the current mesh is added to the running sum. The code for this logic is shown below:
+Suppose we want to find out the total number of triangles in an .obj file. This can be accomplished by passing the .obj file path to the [`ParseFile`](#parsefile) function and then calling the [`Triangulate`](#triangulate) function. The next step is looping through all the meshes; in each iteration, the number of triangles in the current mesh is added to the running sum. The code for this logic is shown below:
 
 ```cpp
 #include "rapidobj/rapidobj.hpp"
@@ -825,7 +825,7 @@ int main()
 
 ## Next Steps
 
-Typically, parsed .obj data cannot be used "as is". For instance, for hardware rendering, a number of additional processing steps are required so that the data is in a format easily consumed by a GPU. rapidobj provides one convenience function, ```Triangulate()```, to assist with this task. Other tasks must be implemented by the rendering application. These may include:
+Typically, parsed .obj data cannot be used "as is". For instance, for hardware rendering, a number of additional processing steps are required so that the data is in a format easily consumed by a GPU. rapidobj provides one convenience function, [`Triangulate`](#triangulate), to assist with this task. Other tasks must be implemented by the rendering application. These may include:
 
 - Gathering all the attributes so that the vertex data is in a single array of interleaved attributes. This step may optionally include vertex deduplication.
 - Generate normals in case they are not provided in the .obj file. This step may use smoothing groups (if any) to create higher quality normals.
