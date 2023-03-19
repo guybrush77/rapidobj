@@ -168,30 +168,61 @@ target_link_libraries(my_app PRIVATE rapidobj::rapidobj)
 
 ### ParseFile
 
-Loads an .obj file, parses it and returns a result object.
+Loads a Wavefront .obj data from a file, parses it and returns a binary [`Result`](#result) object.
 
 **Signature:**
 
 ```c++
 Result ParseFile(
     const std::filesystem::path& obj_filepath,
-    const MaterialLibrary&       mtl_library = MaterialLibrary::Default())
+    const MaterialLibrary&       mtl_library = MaterialLibrary::Default());
 ```
 
 **Parameters:**
 
 - `obj_filepath` - Path to .obj file to be parsed.
-- `mtl_library` - MaterialLibrary object specifies .mtl file search path(s) and loading policy.
+- `mtl_library` - [`MaterialLibrary`](#materiallibrary) object specifies .mtl file search path(s) and loading policy.
 
 **Result:**
 
-- `Result` - The .obj file data in a binary format.
+- [`Result`](#result) - The .obj file data in a binary format.
 
 <details>
 <summary><i>Show examples</i></summary>
   
 ```c++
-Result result = ParseFile("/home/user/teapot/teapot.obj");
+rapidobj::Result result = rapidobj::ParseFile("/home/user/teapot/teapot.obj");
+```
+
+</details>
+
+### ParseStream
+
+Loads a Wavefront .obj data from a standard library input stream, parses it and returns a binary [`Result`](#result) object. Because input streams are sequential, this function is usually less performant than the similar [`ParseFile`](#parsefile) function.
+
+**Signature:**
+
+```c++
+Result ParseStream(
+    std::istream&          obj_stream,
+    const MaterialLibrary& mtl_library = MaterialLibrary::Default());
+```
+
+**Parameters:**
+
+- `obj_filepath` - Input stream to parse.
+- `mtl_library` - [`MaterialLibrary`](#materiallibrary) object specifies .mtl file search path(s) and loading policy.
+
+**Result:**
+
+- [`Result`](#result) - The .obj file data in a binary format.
+
+<details>
+<summary><i>Show examples</i></summary>
+  
+```c++
+std::ifstream stream("/home/user/teapot/teapot.obj");
+rapidobj::Result result = rapidobj::ParseStream(stream);
 ```
 
 </details>
