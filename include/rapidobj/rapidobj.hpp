@@ -5314,7 +5314,6 @@ inline std::string ComputeDebugStats(const std::vector<std::chrono::nanoseconds>
     auto min_index = size_t{};
     auto max_index = size_t{};
     auto avg_time  = std::chrono::nanoseconds{};
-    auto stddev    = std::chrono::nanoseconds{};
 
     for (size_t i = 0; i != population.size(); ++i) {
         auto sample = population[i];
