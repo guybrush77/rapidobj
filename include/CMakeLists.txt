@@ -5,7 +5,7 @@ add_library(rapidobj::rapidobj ALIAS rapidobj)
 
 target_compile_features(rapidobj INTERFACE cxx_std_17)
 
-target_include_directories(rapidobj INTERFACE
+target_include_directories(rapidobj SYSTEM INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:${RAPIDOBJ_INCLUDE_DIR}>
 )
