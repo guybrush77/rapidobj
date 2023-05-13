@@ -6131,7 +6131,7 @@ inline auto ParseMaterialLibrary(SharedContext* context)
     return ParseMaterials(std::string_view(filedata.data(), static_cast<size_t>(filesize)));
 }
 
-inline void DispatchMergeTasks(const std::vector<MergeTask>& tasks, std::shared_ptr<SharedContext> context)
+inline void DispatchMergeTasks(const MergeTasks& tasks, std::shared_ptr<SharedContext> context)
 {
     while (true) {
         auto fetched_index = std::atomic_fetch_add(&context->merging.task_index, size_t(1));
@@ -6140,9 +6140,9 @@ inline void DispatchMergeTasks(const std::vector<MergeTask>& tasks, std::shared_
             break;
         }
 
-        const auto& task = tasks[fetched_index];
+        const auto& merge_task = tasks[fetched_index];
 
-        if (auto rc = std::visit([](const auto& task) { return task.Execute(); }, task); rc != rapidobj_errc::Success) {
+        if (auto rc = std::visit([](const auto& task) { return task.Execute(); }, merge_task); rc != rapidobj_errc::Success) {
             std::lock_guard lock(context->merging.mutex);
             if (context->merging.error == rapidobj_errc::Success) {
                 context->merging.error = rc;
@@ -7121,16 +7121,16 @@ inline Result ParseFile(const std::filesystem::path& filepath, const MaterialLib
 
     context->material.basepath = filepath.parent_path();
 
-    if (auto* null = std::get_if<std::nullptr_t>(material_library_value)) {
+    if (std::get_if<std::nullptr_t>(material_library_value) != nullptr) {
         context->material.library = nullptr;
-    } else if (auto* none = std::get_if<std::monostate>(material_library_value)) {
+    } else if (std::get_if<std::monostate>(material_library_value) != nullptr) {
         context->material.library = &default_material_library;
     } else if (auto* paths = std::get_if<std::vector<std::filesystem::path>>(material_library_value)) {
         if (paths->empty()) {
             return Result{ Attributes{}, Shapes{}, Materials{}, Error{ rapidobj_errc::InvalidArgumentsError } };
         }
         context->material.library = &material_library;
-    } else if (auto* string = std::get_if<std::string_view>(material_library_value)) {
+    } else if (std::get_if<std::string_view>(material_library_value) != nullptr) {
         context->material.library = &material_library;
     } else {
         return Result{ Attributes{}, Shapes{}, Materials{}, Error{ rapidobj_errc::InternalError } };
@@ -7196,9 +7196,9 @@ inline Result ParseStream(std::istream& is, const MaterialLibrary& material_libr
     auto material_library_value   = &material_library.Value();
     auto default_material_library = MaterialLibrary::SearchPaths({}, Load::Optional);
 
-    if (auto* null = std::get_if<std::nullptr_t>(material_library_value)) {
+    if (std::get_if<std::nullptr_t>(material_library_value) != nullptr) {
         context->material.library = nullptr;
-    } else if (auto* none = std::get_if<std::monostate>(material_library_value)) {
+    } else if (std::get_if<std::monostate>(material_library_value) != nullptr) {
         if (material_library.Policy()) {
             return Result{ Attributes{}, Shapes{}, Materials{}, Error{ rapidobj_errc::InvalidArgumentsError } };
         }
@@ -7211,7 +7211,7 @@ inline Result ParseStream(std::istream& is, const MaterialLibrary& material_libr
             return Result{ Attributes{}, Shapes{}, Materials{}, Error{ rapidobj_errc::MaterialRelativePathError } };
         }
         context->material.library = &material_library;
-    } else if (auto* string = std::get_if<std::string_view>(material_library_value)) {
+    } else if (std::get_if<std::string_view>(material_library_value) != nullptr) {
         context->material.library = &material_library;
     } else {
         return Result{ Attributes{}, Shapes{}, Materials{}, Error{ rapidobj_errc::InternalError } };
@@ -7258,15 +7258,15 @@ inline Result ParseStream(std::istream& is, const MaterialLibrary& material_libr
 
 struct TriangulateTask final {
     TriangulateTask(
-        const Mesh* src,
-        Mesh*       dst,
-        size_t      cost,
-        size_t      isrc,
-        size_t      idst,
-        size_t      fsrc,
-        size_t      fdst,
-        size_t      size) noexcept
-        : src(src), dst(dst), cost(cost), isrc(isrc), idst(idst), fsrc(fsrc), fdst(fdst), size(size)
+        const Mesh* src_,
+        Mesh*       dst_,
+        size_t      cost_,
+        size_t      isrc_,
+        size_t      idst_,
+        size_t      fsrc_,
+        size_t      fdst_,
+        size_t      size_) noexcept
+        : src(src_), dst(dst_), cost(cost_), isrc(isrc_), idst(idst_), fsrc(fsrc_), fdst(fdst_), size(size_)
     {}
 
     const Mesh* src{};
