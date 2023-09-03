@@ -4590,10 +4590,6 @@ using FillFloats = FillElements<float>;
 using FillMaterialIds       = FillIds<int32_t>;
 using FillSmoothingGroupIds = FillIds<uint32_t>;
 
-using MergeTask =
-    std::variant<CopyBytes, CopyInts, CopyFloats, CopyIndices, FillFloats, FillMaterialIds, FillSmoothingGroupIds>;
-using MergeTasks = std::vector<MergeTask>;
-
 template <typename T>
 struct CopyElements final {
     CopyElements(T* dst, const T* src, size_t size) noexcept : m_dst(dst), m_src(src), m_size(size) {}
@@ -4610,18 +4606,7 @@ struct CopyElements final {
         return rapidobj_errc::Success;
     }
 
-    auto Subdivide(size_t num) const noexcept
-    {
-        auto begin = size_t{ 0 };
-        auto tasks = MergeTasks();
-        tasks.reserve(num);
-        for (size_t i = 0; i != num; ++i) {
-            auto end = (1 + i) * m_size / num;
-            tasks.push_back(CopyElements(m_dst + begin, m_src + begin, end - begin));
-            begin = end;
-        }
-        return tasks;
-    }
+    inline auto Subdivide(size_t num) const noexcept;
 
   private:
     T*       m_dst{};
@@ -4645,18 +4630,7 @@ struct FillElements final {
         return rapidobj_errc::Success;
     }
 
-    auto Subdivide(size_t num) const noexcept
-    {
-        auto begin = size_t{ 0 };
-        auto tasks = MergeTasks();
-        tasks.reserve(num);
-        for (size_t i = 0; i != num; ++i) {
-            auto end = (1 + i) * m_size / num;
-            tasks.push_back(FillElements(m_dst + begin, m_value, end - begin));
-            begin = end;
-        }
-        return tasks;
-    }
+    inline auto Subdivide(size_t num) const noexcept;
 
   private:
     T*      m_dst{};
@@ -4701,18 +4675,7 @@ struct FillIds final {
         return rapidobj_errc::Success;
     }
 
-    auto Subdivide(size_t num) const noexcept
-    {
-        auto begin = size_t{ 0 };
-        auto tasks = MergeTasks();
-        tasks.reserve(num);
-        for (size_t i = 0; i != num; ++i) {
-            auto end = (1 + i) * m_size / num;
-            tasks.push_back(FillIds(m_dst + begin, *m_src, end - begin, m_start + begin));
-            begin = end;
-        }
-        return tasks;
-    }
+    inline auto Subdivide(size_t num) const noexcept;
 
   private:
     T*                             m_dst{};
@@ -4777,18 +4740,7 @@ struct CopyIndices final {
         return rapidobj_errc::Success;
     }
 
-    auto Subdivide(size_t num) const noexcept
-    {
-        auto begin = size_t{ 0 };
-        auto tasks = MergeTasks();
-        tasks.reserve(num);
-        for (size_t i = 0; i != num; ++i) {
-            auto end = (1 + i) * m_size / num;
-            tasks.push_back(CopyIndices(m_dst + begin, m_src + begin, m_offset_flags, end - begin, m_offset, m_count));
-            begin = end;
-        }
-        return tasks;
-    }
+    inline auto Subdivide(size_t num) const noexcept;
 
   private:
     Index*             m_dst{};
@@ -4798,6 +4750,65 @@ struct CopyIndices final {
     AttributeInfo      m_offset{};
     AttributeInfo      m_count{};
 };
+
+using MergeTask =
+    std::variant<CopyBytes, CopyInts, CopyFloats, CopyIndices, FillFloats, FillMaterialIds, FillSmoothingGroupIds>;
+using MergeTasks = std::vector<MergeTask>;
+
+template <typename T>
+auto CopyElements<T>::Subdivide(size_t num) const noexcept
+{
+    auto begin = size_t{ 0 };
+    auto tasks = MergeTasks();
+    tasks.reserve(num);
+    for (size_t i = 0; i != num; ++i) {
+        auto end = (1 + i) * m_size / num;
+        tasks.push_back(CopyElements(m_dst + begin, m_src + begin, end - begin));
+        begin = end;
+    }
+    return tasks;
+}
+
+template <typename T>
+auto FillElements<T>::Subdivide(size_t num) const noexcept
+{
+    auto begin = size_t{ 0 };
+    auto tasks = MergeTasks();
+    tasks.reserve(num);
+    for (size_t i = 0; i != num; ++i) {
+        auto end = (1 + i) * m_size / num;
+        tasks.push_back(FillElements(m_dst + begin, m_value, end - begin));
+        begin = end;
+    }
+    return tasks;
+}
+
+template <typename T>
+auto FillIds<T>::Subdivide(size_t num) const noexcept
+{
+    auto begin = size_t{ 0 };
+    auto tasks = MergeTasks();
+    tasks.reserve(num);
+    for (size_t i = 0; i != num; ++i) {
+        auto end = (1 + i) * m_size / num;
+        tasks.push_back(FillIds(m_dst + begin, *m_src, end - begin, m_start + begin));
+        begin = end;
+    }
+    return tasks;
+}
+
+auto CopyIndices::Subdivide(size_t num) const noexcept
+{
+    auto begin = size_t{ 0 };
+    auto tasks = MergeTasks();
+    tasks.reserve(num);
+    for (size_t i = 0; i != num; ++i) {
+        auto end = (1 + i) * m_size / num;
+        tasks.push_back(CopyIndices(m_dst + begin, m_src + begin, m_offset_flags, end - begin, m_offset, m_count));
+        begin = end;
+    }
+    return tasks;
+}
 
 struct Reader {
     struct ReadResult final {
