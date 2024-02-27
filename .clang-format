@@ -2,7 +2,6 @@
 AlignAfterOpenBracket: AlwaysBreak
 AlignConsecutiveAssignments: true
 AlignConsecutiveMacros: true
-AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: true
 AlignEscapedNewlines: DontAlign
 AlignTrailingComments: true
