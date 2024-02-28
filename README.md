@@ -238,7 +238,8 @@ struct MaterialLibrary final {
     static MaterialLibrary Default();
     static MaterialLibrary Default(Load policy);
     static MaterialLibrary SearchPath(std::filesystem::path path, Load policy = Load::Mandatory);
-    static MaterialLibrary SearchPaths(std::vector<std::filesystem::path> paths, Load policy = Load::Mandatory);
+    static MaterialLibrary SearchPaths(std::vector<std::filesystem::path> paths,
+                                       Load policy = Load::Mandatory);
     static MaterialLibrary String(std::string_view text);
     static MaterialLibrary Ignore();
 };
@@ -326,7 +327,8 @@ A relative search path's current directory is .obj file's parent folder. A relat
 //         ├── materials
 //         │   └── teapot.mtl
 //         └── teapot.obj
-Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::SearchPath("materials"));
+Result result = ParseFile("/home/user/teapot/teapot.obj",
+                          MaterialLibrary::SearchPath("materials"));
 ```
 
 ```c++
@@ -338,7 +340,8 @@ Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::Searc
 //     │   └── teapot.mtl
 //     └── teapot
 //         └── teapot.obj
-Result result = ParseFile("/home/user/teapot/teapot.obj", MaterialLibrary::SearchPath("/home/user/materials"));
+Result result = ParseFile("/home/user/teapot/teapot.obj",
+                          MaterialLibrary::SearchPath("/home/user/materials"));
 ```
 
 </details>
@@ -353,7 +356,8 @@ A relative search path's current directory is .obj file's parent folder. A relat
 <summary><i>Show examples</i></summary>
 
 ```c++
-// Look for .mtl file in folder /home/user/teapot/materials, then /home/user/materials, then /home/user/teapot.
+// Look for .mtl file in folder /home/user/teapot/materials,
+// then /home/user/materials, then /home/user/teapot.
 //
 // home
 // └── user
@@ -850,11 +854,3 @@ This is a list of third party tools and resources used by this project:
 - [fast_float](https://github.com/fastfloat/fast_float) for string to float parsing
 - [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader) for .obj file parsing
 - [xxHash](https://github.com/Cyan4973/xxHash) for hashing
-
-## License
-
-The rapidobj single-header library is licensed under the MIT License.
-
-The rapidobj single-header library contains a copy of [fast_float](https://github.com/fastfloat/fast_float) number parsing library from Daniel Lamire which is licensed under the MIT License as well as under the Apache 2.0 License.
-
-The rapidobj single-header library contains a copy of [earcut.hpp](https://github.com/mapbox/earcut.hpp) polygon triangulation library from Mapbox which is licensed under the ISC License.
