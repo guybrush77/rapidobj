@@ -28,7 +28,6 @@
 - [Next Steps](#next-steps)
 - [OS Support](#os-support)
 - [Third Party Tools and Resources](#third-party-tools-and-resources)
-- [License](#license)
 
 ## About
 
