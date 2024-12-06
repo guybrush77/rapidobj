@@ -52,7 +52,11 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 #elif _WIN32
 
 #define WIN32_LEAN_AND_MEAN
+
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
+
 #include <windows.h>
 
 #elif __APPLE__
