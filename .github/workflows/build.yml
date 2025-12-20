@@ -40,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        compiler: [ { cxx: g++-9, c: gcc-9 }, { cxx: clang++-11, c: clang-11 } ]
+        compiler: [ { cxx: g++-14, c: gcc-14 }, { cxx: clang++-20, c: clang-20 } ]
         build-type: [ Debug, Release ]
     steps:
       - uses: actions/checkout@v4
