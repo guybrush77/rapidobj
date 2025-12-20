@@ -29,7 +29,6 @@ set(CXXOPTS_BUILD_TESTS OFF)
 FetchContent_Declare(
     cxxopts
     GIT_REPOSITORY  https://github.com/jarro2783/cxxopts
-    GIT_TAG         v2.2.1
     GIT_SHALLOW     TRUE
 )
 
