@@ -4967,7 +4967,7 @@ class File final {
         m_handle = CreateFileA(
             filepath_string.c_str(),
             GENERIC_READ,
-            0,
+            FILE_SHARE_READ,
             nullptr,
             OPEN_EXISTING,
             FILE_ATTRIBUTE_READONLY | FILE_FLAG_NO_BUFFERING | FILE_FLAG_OVERLAPPED,
