@@ -43,7 +43,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 #include <variant>
 #include <vector>
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__EMSCRIPTEN__)
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -4842,7 +4842,7 @@ struct Reader {
 
 namespace sys {
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__EMSCRIPTEN__)
 
 inline auto AlignedAllocate(size_t size, size_t alignment)
 {
@@ -4909,7 +4909,9 @@ struct FileReader : Reader {
         m_size   = size;
         m_buffer = buffer;
 
+#ifndef __EMSCRIPTEN__
         readahead(m_fd, offset, size);
+#endif
 
         auto t2 = std::chrono::steady_clock::now();
 
