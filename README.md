@@ -73,6 +73,12 @@ g++ -std=c++17 my_src.cpp -pthread -o my_app
 
 > :page_facing_up: If you are using gcc version 8, you also have to link against the _stdc++fs_ library (_std::filesystem_ used by rapidobj is not part of _libstdc++_ until gcc version 9).
 
+When building with Emscripten, compile and link with ```-pthread``` (rapidobj parses on worker threads) and size the thread pool for the number of threads rapidobj starts (for example ```-sPTHREAD_POOL_SIZE=<n>```). Files are read through Emscripten's POSIX file layer, so under Node.js use ```-sNODERAWFS=1``` (or the in-memory file system in a browser); enable ```-sALLOW_MEMORY_GROWTH=1``` for files larger than the initial heap:
+
+```bash
+em++ -std=c++17 my_src.cpp -pthread -sPTHREAD_POOL_SIZE=<n> -sALLOW_MEMORY_GROWTH=1 -o my_app.js
+```
+
 ### CMake Integration
 
 #### External
@@ -839,6 +845,7 @@ Typically, parsed .obj data cannot be used "as is". For instance, for hardware r
 - Windows
 - macOS
 - Linux
+- Emscripten (WebAssembly, see below)
 
 ## Third Party Tools and Resources
 
